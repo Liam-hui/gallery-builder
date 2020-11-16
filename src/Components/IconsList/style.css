@@ -1,0 +1,83 @@
+
+.iconsListContainer {
+  position: relative;
+  display:flex;
+  flex-direction: column-reverse;
+  -webkit-box-shadow: 8px 0px 4px -4px rgba(0,0,0,0.1);
+  -moz-box-shadow: 8px 0px 4px -4px rgba(0,0,0,0.1);
+  box-shadow: 4px 0px 10px -4px rgba(0,0,0,0.1);
+}
+
+@media all and (min-width: 769px) {
+  .iconsListContainer {
+    /* background-color:red; */
+  }
+}
+
+@media all and (max-width: 768px){
+  .iconsListContainer {
+    flex-direction: column;
+  }
+}
+
+.iconWrapper {
+  /* background-color: blueviolet; */
+  display: inline-block;
+  box-sizing: border-box;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.icon {
+  padding:25px;
+  box-sizing: border-box;
+  margin-left: auto;
+  margin-right: auto;
+  top:50%;
+  transform:translateY(-50%);
+  position: relative;
+}
+
+.icon img{
+  width:100%;
+  height:100%;
+  object-fit: contain;
+  transition: all 0.2s ease-in;
+}
+
+.icon img:hover{
+  opacity: 0.8;
+  transform: scale(1.1);
+}
+
+.iconImageSelected {
+  width: 100px;
+  height: 100px;
+  object-fit: contain;
+  /* transition: all 0.3s ease-in; */
+}
+
+.selectedflagContainer {
+  pointer-events: none;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top:0;
+  right:0;
+  align-items: center;
+  justify-content: center;
+  display: flex;
+  opacity: 0;
+  transition: all 0.5s ease-in-out;
+}
+
+.selected .selectedflagContainer{
+  opacity: 1;
+}
+
+.selectedflag {
+  background-color: rgba(255,255,255,0.3);
+  padding:5px;
+  border-radius: 8px;
+  color: #333333;
+}

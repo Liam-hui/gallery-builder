@@ -1,0 +1,19 @@
+.topBarContainer {
+  width:100%;
+  height:40px;
+  display: flex;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.stepButton {
+  display: flex;
+  align-items: center;
+  color:grey;
+  width:60px;
+  margin-right: 20px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+
+

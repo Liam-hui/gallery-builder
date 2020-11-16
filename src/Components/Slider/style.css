@@ -1,0 +1,223 @@
+.sliderContainer {
+  flex:1;
+  display: flex;
+  align-items: center;
+  overflow-x: scroll;  
+  overflow-y: hidden;  
+  padding-left: 20px;
+  position: relative;
+}
+
+.sliderContainer.vertical {
+  overflow-x: hidden;
+  overflow-y: scroll;  
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 30px;
+  padding-left: 0px;
+}
+
+.sliderScrollContainer{
+  display: flex;
+  flex-direction: row-reverse;
+  overflow: visible; 
+  position: relative;
+}
+
+.sliderContainer.vertical .sliderScrollContainer{
+  flex-direction: column-reverse;
+}
+
+/* @media all and (min-width: 769px) and (min-height: 769px){
+  .sliderContainer.vertical .sliderScrollContainer{
+    flex-direction: column-reverse;
+  }
+} */
+
+@keyframes sliderImageSlideIn {
+  0% {
+    width: 0px;
+  }
+  100% {
+    width: var(--slider-image-width);
+  }
+}
+
+@keyframes sliderImageSlideInVertical {
+  0% {
+    height: 0px;
+  }
+  100% {
+    height: var(--slider-image-height);
+  }
+}
+
+.sliderImageWrapper {
+  animation: sliderImageSlideIn 0.8s ease-out 0s, fadeIn 2s ease-in-out 0s;
+  flex-shrink: 0;
+  padding: 10px 10px 10px 10px;
+  position: relative;
+  overflow: visible;  
+}
+
+
+.sliderImageWrapper.pressed {
+  background-color:rgba(200,200,200,0.4);
+}
+
+.sliderContainer.vertical .sliderImageWrapper {
+  animation: sliderImageSlideInVertical 0.8s ease-out 0s, fadeIn 2s ease-in-out 0s;
+  margin: 10px 0;
+}
+
+.sliderImage {
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  background-position: center;
+  margin-left: auto;
+  margin-right: auto;
+  top:50%;
+  transform:translateY(-50%);
+  position: relative;
+  box-sizing: border-box;
+  transition: transform 0.2s ease-in; 
+}
+
+.isDesktop .sliderImageWrapper:hover .sliderImage{
+  transform:translateY(-50%) scale(1.12);
+  transition: transform 0.2s ease-in;
+}
+
+.isDesktop .sliderImageWrapper:hover .sliderImage img{
+  opacity: 0.55;
+  transition: opacity 0.2s ease-in;
+}
+
+.isDesktop .sliderImageWrapper:hover .deleteButton{
+  opacity: 1;
+  pointer-events: unset;
+}
+  
+.statusWrapper {
+  pointer-events: none;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top:0;
+  right:0;
+  align-items: center;
+  justify-content: center;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  transition: all 0.5s ease-in-out;
+}
+
+.selected .statusWrapper{
+  opacity: 1;
+}
+
+.selected .sliderImage {
+  transform:translateY(-50%) scale(1.05);
+  transition: transform 0.17s ease-in;
+}
+
+.selected .sliderImage img {
+  opacity: 0.74;
+  transition: opacity 0.17s ease-in;
+}
+
+.statusWrapperBox {
+  background-color: rgba(255,255,255,0.3);
+  padding:5px;
+  border-radius: 8px;
+  color: #333333;
+}
+
+
+.pressed .chooseButtonWrapper{
+  opacity: 1;
+  /* animation: transition-pointer-events 1s linear; */
+  z-index: 9999;
+}
+
+.pressed .deleteButton {
+  opacity: 1;
+  /* animation: transition-pointer-events 1s linear; */
+  z-index: 9999;
+}
+
+
+.deleteButton {
+  width:24px;
+  height:24px;
+  border-radius: 12px;
+  padding:2px;
+  background-color:#F2F2F2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  -webkit-box-shadow: 3px 3px 7px -4px rgba(0,0,0,0.3);
+  -moz-box-shadow: 3px 3px 7px -4px rgba(0,0,0,0.3);
+  box-shadow: 3px 3px 7px -4px rgba(0,0,0,0.3);
+  opacity: 0;
+  transition: opacity 0.2s ease-in;
+  pointer-events: none;
+}
+
+.isMobile .deleteButton {
+  z-index: -9999;
+}
+
+.isDesktop .deleteButton {
+  position: absolute;
+  right:-10px;
+  top:-10px;
+}
+
+.deleteButtonClickArea {
+  position: absolute;
+  right:-20px;
+  top:-20px;
+  padding:12px;
+  -webkit-tap-highlight-color: transparent;
+  /* background-color: red; */
+}
+
+.chooseButtonWrapper {
+  width:100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  bottom: -13px;
+  left:0;
+  opacity: 0;
+  z-index: -9999;
+}
+
+.chooseButtonClickArea {
+  padding:12px 4px;
+  -webkit-tap-highlight-color: transparent;
+  /* background-color: red; */
+}
+
+.chooseButton{
+  font-size: 13px;
+  color: #AAAAAA;
+  height:22px;
+  width:54px;
+  border-radius: 6px;
+  margin: 0 8px;
+  background-color: #F2F2F2;
+  display: flex;
+  align-items:center;
+  justify-content: center;
+  -webkit-box-shadow: 3px 3px 7px -4px rgba(0,0,0,0.3);
+  -moz-box-shadow: 3px 3px 7px -4px rgba(0,0,0,0.3);
+  box-shadow: 3px 3px 7px -4px rgba(0,0,0,0.3);
+  z-index: 999;
+  pointer-events: none;
+}
+
