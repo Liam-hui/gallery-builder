@@ -10,6 +10,7 @@ import { mdiCloseThick } from '@mdi/js';
 
 function Slider(props) {
 
+  const mode = useSelector(state => state.mode);
   const screen = useSelector(state => state.screen);
 
   const {vertical,images,selectedId,selectedText,selectItem,deleteItem,canDelete} = props;
@@ -26,9 +27,6 @@ function Slider(props) {
     else {WIDTH=100;HEIGHT=100;}
   }
  
-  let sliderImageStyle = { width:WIDTH, height:HEIGHT, "--slider-image-width": WIDTH+'px', "--slider-image-height": HEIGHT+'px' };
-
-
   const imagesList = images.map((image,index) => {
     let ratio = image.width / image.height;
     let width;
@@ -50,13 +48,12 @@ function Slider(props) {
         <div className='sliderImage' style={{width:width,height:height}}>
           <img src={image.url} style={{width:'100%',height:'100%'}} onClick={isMobile? ()=>{if(highlighted==image.id) setHighlighted(-1); else setHighlighted(image.id)}:()=>selectItem(image.id)} 
             onMouseLeave={(e)=>{
-              console.log(e.relatedTarget.className);
               if(e.relatedTarget.className!='deleteButtonClickArea' && e.relatedTarget.className!='chooseButtonClickArea') setHighlighted(-1);
             }
           }/>
           
           {canDelete&&!isMobile?(
-            <div className='deleteButton' onClick={()=>deleteItem(image.id)}>
+            <div className='deleteButton' onClick={()=>{deleteItem(image.id);}}>
               <Icon path={mdiCloseThick} style={{transform:`translate(0.5px,0.5px)`}} size={0.8} color="#DDDDDD"/>
             </div>
           ):null}
@@ -68,30 +65,31 @@ function Slider(props) {
           </div>
         </div>
 
-        {/* <div className='pressedWrapper'> */}
-          {canDelete&&isMobile?(
-            <div className="deleteButtonClickArea" onClick={()=>{if(highlighted==image.id)deleteItem(image.id)}}>
-              <div className='deleteButton'>
-                <Icon path={mdiCloseThick} style={{transform:`translate(0.5px,0.5px)`,pointerEvents:'none'}} size={0.8} color="#DDDDDD"/>
-              </div>
-            </div>
-          ):null}
-
-          <div className="chooseButtonWrapper">
-            <div className="chooseButtonClickArea" onClick={()=>{if(highlighted==image.id)selectItem(image.id)}}>
-              <div className="chooseButton">
-                {selectedId==image.id?'取消':'選擇'}
-              </div>
+        {canDelete&&isMobile?(
+          <div className="deleteButtonClickArea" onClick={()=>{if(highlighted==image.id)deleteItem(image.id)}}>
+            <div className='deleteButton'>
+              <Icon path={mdiCloseThick} style={{transform:`translate(0.5px,0.5px)`,pointerEvents:'none'}} size={0.8} color="#DDDDDD"/>
             </div>
           </div>
-        {/* </div> */}
-     
+        ):null}
+
+        <div className="chooseButtonWrapper">
+          <div className="chooseButtonClickArea" onClick={()=>{if(highlighted==image.id)selectItem(image.id)}}>
+            <div className="chooseButton">
+              {selectedId==image.id?'取消':'選擇'}
+            </div>
+          </div>
+        </div>
+
       </div>
     )
   });
 
+  const isAdmin = mode=='admin'? ' isAdmin':'';
+  const isVertical = vertical? ' vertical':'';
+
   return (
-    <div className={vertical?"sliderContainer vertical":"sliderContainer"}>
+    <div className={"sliderContainer"+isVertical+isAdmin}>
       
       <div className="sliderScrollContainer">
         {imagesList}

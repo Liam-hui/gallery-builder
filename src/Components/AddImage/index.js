@@ -49,7 +49,7 @@ function AddImage(props) {
         let output = {};
         output.id = image.id;
         output.placeHolderInfo = image.iconInfo;
-        return output;
+        return JSON.stringify(output);
       }));
     }
   }

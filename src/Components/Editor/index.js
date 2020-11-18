@@ -169,9 +169,9 @@ function Editor(props) {
     if(!editorScale_) editorScale_ = editorScale;
     if (mode=='admin'){
       if(currentImage.iconInfo == null) {
-        let PLACEHOLDER_SIZE = screen.screenWidth>768? 350:150;
+        let PLACEHOLDER_DISPLAY_SIZE = screen.screenWidth>768? 350:150;
         iconInfo.rot = 0;
-        iconInfo.scale = 1/editorScale_;
+        iconInfo.scale = PLACEHOLDER_DISPLAY_SIZE/PLACEHOLDER_SIZE/editorScale_;
         iconInfo.width = PLACEHOLDER_SIZE;
         iconInfo.height = PLACEHOLDER_SIZE;
         iconInfo.x = currentImage.width*0.5;
@@ -374,8 +374,8 @@ function Editor(props) {
               </div>
 
               {iconInfo.scale>1&&mode=='user'?(
-                <div className="headWarningContainer" style={{width: 40/iconInfo.scale/editorScale,height: 40/iconInfo.scale/editorScale,padding: 10/iconInfo.scale/editorScale}}>
-                  <div className='headWarning' style={{borderRadius: 6/iconInfo.scale/editorScale}}>
+                <div className="headImageWarningContainer" style={{width: 40/iconInfo.scale/editorScale,height: 40/iconInfo.scale/editorScale,padding: 10/iconInfo.scale/editorScale}}>
+                  <div className='headImageWarning' style={{borderRadius: 6/iconInfo.scale/editorScale}}>
                     <Icon path={mdiExclamationThick} size={1.2/iconInfo.scale/editorScale} color="white"/>
                   </div>
                 </div>
@@ -417,7 +417,7 @@ function Editor(props) {
             </div>
           ):(
             <div className={currentImage.iconSelected && currentImage.iconSelected!=-1? 'headImage hidden' : 'headImage'} 
-              style={{backgroundImage:'url('+placeHolderImage+')',width:currentImage.placeHolder.width,height:currentImage.placeHolder.height,transform: `translate(${currentImage.placeHolder.x-currentImage.placeHolder.width*0.5}px, ${currentImage.placeHolder.y-currentImage.placeHolder.height*0.5}px) rotate(${currentImage.placeHolder.rot}deg) scale(${currentImage.placeHolder.scale})`}}
+              style={{backgroundImage:`url(${placeHolderImage})`,width:currentImage.placeHolder.width,height:currentImage.placeHolder.height,transform: `translate(${currentImage.placeHolder.x-currentImage.placeHolder.width*0.5}px, ${currentImage.placeHolder.y-currentImage.placeHolder.height*0.5}px) rotate(${currentImage.placeHolder.rot}deg) scale(${currentImage.placeHolder.scale})`}}
             >
               <p style={{fontSize:currentImage.placeHolder.width*0.1}}>請選擇頭像</p>
             </div>

@@ -13,7 +13,6 @@ function IconsList(props) {
   const imageSelected = useSelector(state => state.imageSelected);
 
   const icons = useSelector(state => state.icons);
-  const iconId = useSelector(state => state.iconId);
 
   const image = () => {
     return images.find(image => image.id == imageSelected);

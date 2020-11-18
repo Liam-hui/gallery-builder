@@ -120,12 +120,14 @@ function App() {
 
   useEffect(() => {
     // console.log('a',query.get('id'));
-    store.dispatch({type:'SELECT_MODE',mode:'admin'});
+    let mode = query.get('mode');
+    if (mode==null) mode = 'admin';
+
+    store.dispatch({type:'SELECT_MODE',mode:mode});
 
     store.dispatch({type:'SET_IMAGES',images:temp_images});
     store.dispatch({type:'SET_SCREEN',screenWidth:window.innerWidth,screenHeight:window.innerHeight,orientation:window.matchMedia("(orientation: portrait)")? 'landscape':'portrait'});
   }, []);
-
 
   return (
     <div className={isMobile? "appContainer isMobile":"appContainer isDesktop"} style={{height:screen.screenHeight}}>
@@ -140,8 +142,6 @@ function App() {
         ):null} 
         <Editor/>
       </div>
-
-{/* <div style={{position:'absolute',bottom:0}} onClick={()=>console.log('asdf')}>asdf</div> */}
 
     </div>
 
