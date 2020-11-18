@@ -15,5 +15,9 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+.stepButton.disabled {
+  opacity: 0.6;
+}
+
 
 

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useSelector } from "react-redux";
 import store from './store';
 import {isMobile} from 'react-device-detect';
+import { useLocation} from "react-router-dom";
 
 import Editor from './Components/Editor';
 import ImagesList from './Components/ImagesList';
@@ -96,8 +97,14 @@ const temp_images = [
   },
 ]
 
+function useQuery() {
+  return new URLSearchParams(useLocation().search);
+}
+
 function App() {
 
+  let query = useQuery();
+  const mode = useSelector(state => state.mode);
   const screen = useSelector(state => state.screen);
 
   //execute when resizing finish
@@ -108,10 +115,13 @@ function App() {
   });
   function doneResizing(){
     store.dispatch({type:'SET_SCREEN',screenWidth:window.innerWidth,screenHeight:window.innerHeight,orientation:window.matchMedia("(orientation: portrait)")? 'landscape':'portrait'});
-    console.log(window.innerHeight,window.innerWidth);
+    // console.log(window.innerHeight,window.innerWidth);
   }
 
   useEffect(() => {
+    // console.log('a',query.get('id'));
+    store.dispatch({type:'SELECT_MODE',mode:'admin'});
+
     store.dispatch({type:'SET_IMAGES',images:temp_images});
     store.dispatch({type:'SET_SCREEN',screenWidth:window.innerWidth,screenHeight:window.innerHeight,orientation:window.matchMedia("(orientation: portrait)")? 'landscape':'portrait'});
   }, []);
@@ -120,11 +130,10 @@ function App() {
   return (
     <div className={isMobile? "appContainer isMobile":"appContainer isDesktop"} style={{height:screen.screenHeight}}>
 
-      {screen.screenWidth>768 || screen.screenHeight<screen.screenWidth?  <IconsList/>:null}
-      
+      {mode=='user' && (screen.screenWidth>768 || screen.screenHeight<screen.screenWidth)?  <IconsList/>:null}
       
       <div style={{flex:1}} className='ColumnRevContainer'>
-        {screen.screenHeight>768 || screen.screenHeight>=screen.screenWidth?(
+        {screen.screenHeight>768 || (screen.screenHeight>=screen.screenWidth && mode=='user')?(
           <div className="bottomRow">
             {screen.screenWidth>768? <ImagesList/>:<IconsList/>}
           </div>

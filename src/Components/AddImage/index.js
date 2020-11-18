@@ -5,23 +5,10 @@ import { useSelector } from "react-redux";
 
 function AddImage(props) {
 
-
-  function processFile(dataURL, fileType) {
-    var maxWidth = 800;
-    var maxHeight = 800;
-  
-    var image = new Image();
-    image.src = dataURL;
-
-    console.log(dataURL)
-  
-    image.onload = function () {
-      
-    };
-  
-  }
-
   const iconId = useSelector(state => state.iconId);
+  const mode = useSelector(state => state.mode);
+  const screen = useSelector(state => state.screen);
+  const images = useSelector(state => state.images);
 
   async function handleFileUpload(e) {
     try {
@@ -31,17 +18,11 @@ function AddImage(props) {
       let currentId = iconId;
 
       Array.from(files).forEach((file,index,array)  => {
-        let reader = new FileReader();
-        reader.onload = function(){
-          let dataURL = reader.result;
-          alert(dataURL);
-          var image = new Image();
-          image.src = dataURL;
-          image.onload = function () {
-            store.dispatch({type:'ADD_ICON',icon:{url:this.src,height:this.height,width:this.width,id:currentId+index}})
-          };
+        let image = new Image();
+        image.src = URL.createObjectURL(file);;
+        image.onload = function () {
+          store.dispatch({type:'ADD_ICON',icon:{url:this.src,height:this.height,width:this.width,id:currentId+index}})
         };
-        reader.readAsDataURL(file);
       });
 
       store.dispatch({type:'UPDATE_ICON_ID',id:currentId+Array.from(files).length});
@@ -54,13 +35,38 @@ function AddImage(props) {
     }
   }
 
+  const save = () => {
+    if(mode=='user'){
+      console.log(images.map(image=>{
+        let output = {};
+        output.id = image.id;
+        output.iconInfo = image.iconInfo;
+        return output;
+      }));
+    }
+    else if(mode=='admin'){
+      console.log(images.map(image=>{
+        let output = {};
+        output.id = image.id;
+        output.placeHolderInfo = image.iconInfo;
+        return output;
+      }));
+    }
+  }
+
 
   return (
-    <div className="actionContainer">
-      <label for="add-image">上傳圖片</label>
-      <input onChange={handleFileUpload} type="file" id="add-image" name="uploadPhotoInput" accept="image/*" multiple="multiple"/>
+    <div className={mode=='user'&&screen.screenWidth>768&&screen.screenHeight>768?"actionContainer block":"actionContainer"}>
 
-      <label>儲存</label>
+      {mode=='user'?(
+        <>
+          <label for="add-image">上傳圖片</label>
+          <input onChange={handleFileUpload} type="file" id="add-image" name="uploadPhotoInput" accept="image/*" multiple="multiple"/>
+        </>
+      ):null}
+      
+      <label onClick={save}>儲存</label>
+
     </div>
   );
 }

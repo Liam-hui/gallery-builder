@@ -6,28 +6,28 @@ import {isMobile} from 'react-device-detect';
 
 import TopBar from '../../Components/TopBar';
 import Icon from '@mdi/react'
-import { mdiArrowLeftRightBold } from '@mdi/js';
 import { mdiExclamationThick } from '@mdi/js';
 import { mdiFlipHorizontal } from '@mdi/js';
 import { mdiDelete } from '@mdi/js';
 import { mdiArrowLeftBold } from '@mdi/js';
 import { mdiRotateLeft } from '@mdi/js';
 
+import placeHolderImage from '../../placeHolderImage.png';
+
 const PLACEHOLDER_SIZE = 350;
-let PLACEHOLDER_SCALE = 0.1;
-let EDIT_ICON_SCALE = 0.01;
+// let PLACEHOLDER_SCALE = 0.1;
+// let EDIT_ICON_SCALE = 0.01;
 
 function Editor(props) {
-  if(isMobile) {
-    PLACEHOLDER_SCALE = 0.4;
-    EDIT_ICON_SCALE = 0.05
-  }
+  // if(isMobile) {
+  //   PLACEHOLDER_SIZE = 150;
+  // }
 
+  const mode = useSelector(state => state.mode);
   const screen = useSelector(state => state.screen);
   const images = useSelector(state => state.images);
   const imageSelected = useSelector(state => state.imageSelected);
   const icons = useSelector(state => state.icons);
-  const [imageIndex,setImageIndex] = useState(-1);
 
   const [iconInfo,setIconInfo] = useState({width:PLACEHOLDER_SIZE,height:PLACEHOLDER_SIZE,x:0,y:0,rot:0,scale:1,flip:false});
   const [editorScale,setEditorScale] = useState(1);
@@ -45,30 +45,23 @@ function Editor(props) {
   const [isChanging,setIsChanging] = useState(false);
 
   const [steps,setSteps] = useState([]);
-  const [stepsRecord,setStepsRecord] = useState([]);
+  const [stepEnabled,setStepEnabled] = useState({back:false,redo:false});
+  const [currentStep,setCurrentStep] = useState([]);
 
   const editor = document.getElementById('editorImage');
   if(editor) editor.addEventListener('touchmove', e => {
       e.preventDefault();
   }, { passive: false });
 
-  const image = () => {
-    if(imageSelected==-1) return null;
-    else return images.find(image => image.id == imageSelected)
-  }
-
-  const icon = () => {
-    if(imageSelected==-1) return null;
-    else if(images.find(image => image.id == imageSelected).iconSelected==-1) return null;
-    else return icons.find(icon=>icon.id==images.find(image => image.id == imageSelected).iconSelected); 
-  }
+  const currentImage = imageSelected==-1? null:images.find(image => image.id == imageSelected);
+  const currentImageIndex = imageSelected==-1? null:images.findIndex(image => image.id == imageSelected);
+  const currentIcon = imageSelected==-1 || currentImage.iconSelected==-1? null:icons.find(icon=>icon.id==currentImage.iconSelected); 
 
   useEffect(() => {
-    if(imageIndex==-1 && images.length>0) {
+    if(currentImageIndex==null&&images.length>0) {
       store.dispatch({type:'SELECT_IMAGE',id:images[0].id});
-      setImageIndex(0);
       setSteps(images.map(image=>[]));
-      setStepsRecord(images.map(image=>-1));
+      setCurrentStep(images.map(image=>-1));
     }
   }, [images]);
  
@@ -81,26 +74,28 @@ function Editor(props) {
       setIsChanging(true);
       setTimeout(()=> {
         setIsChanging(false);
-        updateImageSize();
-        updateEditorIconInfo();
-        setImageIndex(images.findIndex(image=>image.id==imageSelected));
+        let editorScale = updateImageSize();
+        updateEditorIconInfo(editorScale);
+        updateStepEnabled();
       }, 200);
     }
   }, [imageSelected]);
 
   useEffect(() => {
-    updateEditorIconInfo();
-    if (icon()!=null) setIsEditing(false);
-    else if(icon()==null) {
+    if(currentIcon!=null) {
+      setIsEditing(false);
+      updateEditorIconInfo();
+    }
+    else {
       let steps_ = steps.slice();
-      steps_[imageIndex] = [];
+      steps_[currentImageIndex] = [];
       setSteps(steps_);
 
-      let stepsRecord_ = stepsRecord.slice();
-      stepsRecord_[imageIndex] = -1;
-      setStepsRecord(stepsRecord_);
+      let currentStep_ = currentStep.slice();
+      currentStep_[currentImageIndex] = -1;
+      setCurrentStep(currentStep_);
     }
-  }, [icon()]);
+  }, [currentIcon]);
 
   useEffect(() => {
     if(touchCount>1) {
@@ -108,70 +103,92 @@ function Editor(props) {
     }
   }, [touchCount]);
 
+  //step
+  const updateStepEnabled = () => {
+    let back = currentImageIndex!=null && steps[currentImageIndex].length>1 && currentStep[currentImageIndex]!=0;
+    let redo = currentImageIndex!=null && currentStep[currentImageIndex]!=-1 && steps[currentImageIndex].length>currentStep[currentImageIndex]+1;
+    setStepEnabled({back:back,redo:redo});
+  }
+
   useEffect(() => {
-    if(isTwoFingerDragging) {
-      let dist = Math.hypot(dragTwoFingerXY[0].x-dragTwoFingerXY[1].x,dragTwoFingerXY[0].y-dragTwoFingerXY[1].y);
-      let scale = dragTwoFingerStart.scale*dist/dragTwoFingerStart.dist;
-      setIconInfo({width:iconInfo.width,height:iconInfo.height,x:iconInfo.x,y:iconInfo.y,rot:iconInfo.rot,scale:scale,flip:iconInfo.flip});
-    }
-  }, [dragTwoFingerXY]);
+    updateStepEnabled();
+  }, [currentStep]);
 
-  const saveStep = () => {
+  const saveStep = (iconInfo) => {
     store.dispatch({type:'UPDATE_ICONINFO',iconInfo:iconInfo,id:imageSelected});
-    let steps_ = steps.slice();
 
-    if(stepsRecord[imageIndex] != -1) {
-      steps_[imageIndex] = steps_[imageIndex].slice(0,stepsRecord[imageIndex]+1);
-      let stepsRecord_ = stepsRecord.slice();
-      stepsRecord_[imageIndex] = -1;
-      setStepsRecord(stepsRecord_);
+    if(currentImageIndex!=null) {
+
+      let steps_ = steps.slice(); 
+      let currentStep_ = currentStep.slice();
+
+      steps_[currentImageIndex] = steps_[currentImageIndex].slice(0,currentStep_[currentImageIndex]+1);
+      steps_[currentImageIndex].push(iconInfo);
+      currentStep_[currentImageIndex] += 1;
+
+      setSteps(steps_);
+      setCurrentStep(currentStep_);
     }
-
-    steps_[imageIndex].push(iconInfo);
-    setSteps(steps_);
   }
 
   const stepBack = () => {
-    if(steps[imageIndex].length>1 && stepsRecord[imageIndex]!=0){
+    if(stepEnabled.back){
 
       let theStep;
-      if(stepsRecord[imageIndex] == -1) theStep = steps[imageIndex].length-2; 
-      else theStep = stepsRecord[imageIndex]-1;
+      if(currentStep[currentImageIndex] == -1) theStep = steps[currentImageIndex].length-2; 
+      else theStep = currentStep[currentImageIndex]-1;
 
-      let newIconInfo = steps[imageIndex][theStep];
+      let newIconInfo = steps[currentImageIndex][theStep];
       store.dispatch({type:'UPDATE_ICONINFO',iconInfo:newIconInfo,id:imageSelected});
       setIconInfo(newIconInfo);
 
-      let stepsRecord_ = stepsRecord.slice();
-      stepsRecord_[imageIndex] = theStep;
-      setStepsRecord(stepsRecord_);
+      let currentStep_ = currentStep.slice();
+      currentStep_[currentImageIndex] = theStep;
+      setCurrentStep(currentStep_);
+
     }
   }
 
   const stepRedo = () => {
-    if(stepsRecord[imageIndex]!=-1 && steps[imageIndex].length>stepsRecord[imageIndex]+1){
+    if(stepEnabled.redo){
 
-      let theStep = stepsRecord[imageIndex]+1; 
+      let theStep = currentStep[currentImageIndex]+1; 
 
-      let newIconInfo = steps[imageIndex][theStep];
+      let newIconInfo = steps[currentImageIndex][theStep];
       store.dispatch({type:'UPDATE_ICONINFO',iconInfo:newIconInfo,id:imageSelected});
       setIconInfo(newIconInfo);
 
-      let stepsRecord_ = stepsRecord.slice();
-      stepsRecord_[imageIndex] = theStep;
-      setStepsRecord(stepsRecord_);
+      let currentStep_ = currentStep.slice();
+      currentStep_[currentImageIndex] = theStep;
+      setCurrentStep(currentStep_);
     }
   }
 
-  const updateEditorIconInfo = () => {
-    if (icon()!=null) {
-      let iconInfo;
-      if(image().iconInfo == null) iconInfo= Object.assign({}, image().placeHolder);
-      else iconInfo = Object.assign({}, image().iconInfo);
-      iconInfo.scale *= (iconInfo.width/icon().width + iconInfo.height/icon().height)*0.5;
-      iconInfo.width = icon().width;
-      iconInfo.height = icon().height;
+  const updateEditorIconInfo = (editorScale_) => {
+    let iconInfo = {};
+    if(!editorScale_) editorScale_ = editorScale;
+    if (mode=='admin'){
+      if(currentImage.iconInfo == null) {
+        let PLACEHOLDER_SIZE = screen.screenWidth>768? 350:150;
+        iconInfo.rot = 0;
+        iconInfo.scale = 1/editorScale_;
+        iconInfo.width = PLACEHOLDER_SIZE;
+        iconInfo.height = PLACEHOLDER_SIZE;
+        iconInfo.x = currentImage.width*0.5;
+        iconInfo.y = currentImage.height*0.5;
+      }
+      else iconInfo = currentImage.iconInfo;
       setIconInfo(iconInfo);
+      if(currentStep[currentImageIndex]==-1) saveStep(iconInfo);
+    }
+    else if (mode=='user' && currentIcon!=null) {
+      if(currentImage.iconInfo == null) iconInfo = currentImage.placeHolder;
+      else iconInfo = currentImage.iconInfo;
+      iconInfo.scale *= (iconInfo.width/currentIcon.width + iconInfo.height/currentIcon.height)*0.5;
+      iconInfo.width = currentIcon.width;
+      iconInfo.height = currentIcon.height;
+      setIconInfo(iconInfo);
+      if(currentStep[currentImageIndex]==-1) saveStep(iconInfo);
     }
   }
 
@@ -180,15 +197,15 @@ function Editor(props) {
       let editorHeight = document.getElementById('editorWindow').clientHeight;
       let editorWidth = document.getElementById('editorWindow').clientWidth;
 
-      let ratio = image().width / image().height;
+      let ratio = currentImage.width / currentImage.height;
       let editorRatio = editorWidth/editorHeight;
       let editorScale;
 
       if(ratio>editorRatio) {
-        editorScale = editorWidth/image().width;
+        editorScale = editorWidth/currentImage.width;
       }
       else {
-        editorScale = editorHeight/image().height;
+        editorScale = editorHeight/currentImage.height;
       }
 
       setEditorScale(editorScale);
@@ -196,6 +213,7 @@ function Editor(props) {
     }
   }
 
+  //move
   const handleDragStart = (ev) => {
     setIsDragging(true);
     setDragStart({
@@ -205,6 +223,7 @@ function Editor(props) {
       startY:iconInfo.y,
     });
   }
+
   const handleDragMove = (ev) => {
     let x = (ev.clientX - dragStart.x)/editorScale;
     let y = (ev.clientY - dragStart.y)/editorScale;
@@ -227,6 +246,7 @@ function Editor(props) {
       angle: Math.atan2(y,  x) / Math.PI * 180,
     });
   }
+
   const handleScaleMove = (ev) => {
     let x = ev.clientX - scaleStart.centerX;
     let y = ev.clientY - scaleStart.centerY; 
@@ -236,18 +256,17 @@ function Editor(props) {
     setIconInfo({width:iconInfo.width,height:iconInfo.height,x:iconInfo.x,y:iconInfo.y,rot:rot,scale:scale,flip:iconInfo.flip});
   }
 
-  
   const handleFlip = () => {
     if(isEditing){
       let iconInfo_ = {width:iconInfo.width,height:iconInfo.height,x:iconInfo.x,y:iconInfo.y,rot:iconInfo.rot,scale:iconInfo.scale,flip:!iconInfo.flip};
       setIconInfo(iconInfo_);
-      saveStep();
+      saveStep(iconInfo_);
     }
   }
 
   const handleEnd = () => {
     if(isEditing){
-      console.log('end');
+      // console.log('end');
       if(isScaling) setIsScaling(false);
       if(isDragging) setIsDragging(false);
       if(isTwoFingerDragging) {
@@ -256,7 +275,7 @@ function Editor(props) {
         setIsTwoFingerDragging(false);
       }
       if(isScaling||isDragging||isTwoFingerDragging) {
-        saveStep();
+        saveStep(iconInfo);
       }
       setTouchCount(0);
     }
@@ -310,6 +329,14 @@ function Editor(props) {
     }
   }
 
+  useEffect(() => {
+    if(isTwoFingerDragging) {
+      let dist = Math.hypot(dragTwoFingerXY[0].x-dragTwoFingerXY[1].x,dragTwoFingerXY[0].y-dragTwoFingerXY[1].y);
+      let scale = dragTwoFingerStart.scale*dist/dragTwoFingerStart.dist;
+      setIconInfo({width:iconInfo.width,height:iconInfo.height,x:iconInfo.x,y:iconInfo.y,rot:iconInfo.rot,scale:scale,flip:iconInfo.flip});
+    }
+  }, [dragTwoFingerXY]);
+
 
   let mouseMove = null;
   if(isScaling) mouseMove=handleScaleMove;
@@ -325,12 +352,12 @@ function Editor(props) {
     >
 
       {/* <div id="editorStartText" className={imageSelected!=-1?'fadeOut':null} >上傳圖片以編輯</div> */}
-      <TopBar back={stepBack} redo={stepRedo}/>
+      <TopBar stepEnabled={stepEnabled} back={stepBack} redo={stepRedo}/>
       {imageSelected!=-1?(
         <div id='editorWindow'>
-          <div id='editorImage' className={isChanging?'changing':null} style={{backgroundImage:'url('+image().url+')',width:image().width,height:image().height,transform: `scale(${editorScale})`}}>
+          <div id='editorImage' className={isChanging?'changing':null} style={{backgroundImage:'url('+currentImage.url+')',width:currentImage.width,height:currentImage.height,transform: `scale(${editorScale})`}}>
 
-          {image().iconSelected!=undefined && image().iconSelected!=-1? (
+          {mode=='admin' || (currentImage.iconSelected!=undefined && currentImage.iconSelected!=-1)? (
             <div id='headMoving' className={'head'} 
               style={{
                 width:iconInfo.width,
@@ -341,10 +368,12 @@ function Editor(props) {
               onMouseLeave={()=>{if(!isScaling||isMobile) setIsEditing(false)}}
             >
               <div className='headImage' 
-                style={{backgroundImage:'url('+icon().url+')',transform: `scaleX(${iconInfo.flip?-1:1})`}}
-              />
+                style={mode=='admin'?{backgroundImage:`url(${placeHolderImage})`}:{backgroundImage:'url('+currentIcon.url+')',transform: `scaleX(${iconInfo.flip?-1:1})`}}
+              >
+                {mode=='admin'? <p style={{fontSize:iconInfo.width*0.1}}>移動此圖示</p>:null}
+              </div>
 
-              {iconInfo.scale>1?(
+              {iconInfo.scale>1&&mode=='user'?(
                 <div className="headWarningContainer" style={{width: 40/iconInfo.scale/editorScale,height: 40/iconInfo.scale/editorScale,padding: 10/iconInfo.scale/editorScale}}>
                   <div className='headWarning' style={{borderRadius: 6/iconInfo.scale/editorScale}}>
                     <Icon path={mdiExclamationThick} size={1.2/iconInfo.scale/editorScale} color="white"/>
@@ -358,33 +387,40 @@ function Editor(props) {
                   onMouseDown={isMobile?null:(e)=>handleDragStart(e.nativeEvent)}
                 />
 
-                {/* <div className="editButton" id='scaleButton' draggable="false" 
+                <div className="editButton" id='scaleButton' draggable="false" 
                   style={{transform: `scale(${1/iconInfo.scale/editorScale})`}}
                   onMouseDown={isMobile?null:(e)=>handleScaleStart(e.nativeEvent)}
                 >
                    <Icon style={{pointerEvents:'none'}} path={mdiRotateLeft} size={1} color="white"/>
                 </div>
 
-                <div className="editButton" id='flipButton' draggable="false" 
-                  style={{transform: `scale(${1/iconInfo.scale/editorScale})`}}
-                  onClick={isEditing?handleFlip:null}
-                >
-                   <Icon path={mdiFlipHorizontal} size={1} color="white"/>
-                </div>
+                {mode=='user'?(
+                  <>
+                    <div className="editButton" id='flipButton' draggable="false" 
+                      style={{transform: `scale(${1/iconInfo.scale/editorScale})`}}
+                      onClick={isEditing?handleFlip:null}
+                    >
+                      <Icon path={mdiFlipHorizontal} size={1} color="white"/>
+                    </div>
 
-                <div className="editButton" id='deleteButton' draggable="false" 
-                  style={{transform: `scale(${1/iconInfo.scale/editorScale})`}}
-                  onClick={isEditing?()=>store.dispatch({type:'UNSELECT_ICON',id:imageSelected}):null}
-                >
-                  <Icon path={mdiDelete} size={1} color="white"/>
-                </div> */}
+                    <div className="editButton" id='deleteButton' draggable="false" 
+                      style={{transform: `scale(${1/iconInfo.scale/editorScale})`}}
+                      onClick={isEditing?()=>store.dispatch({type:'UNSELECT_ICON',id:imageSelected}):null}
+                    >
+                      <Icon path={mdiDelete} size={1} color="white"/>
+                    </div>
+                  </>
+                ):null}
+
               </div>
 
             </div>
           ):(
-            <div className='head' className={image().iconSelected && image().iconSelected!=-1? 'head hidden' : 'head'} 
-              style={{backgroundImage:'url(https://img.icons8.com/material/4ac144/256/user-male.png)',width:image().placeHolder.width,height:image().placeHolder.height,transform: `translate(${image().placeHolder.x-image().placeHolder.width*0.5}px, ${image().placeHolder.y-image().placeHolder.height*0.5}px) rotate(${image().placeHolder.rot}deg) scale(${image().placeHolder.scale})`}}
-            />
+            <div className={currentImage.iconSelected && currentImage.iconSelected!=-1? 'headImage hidden' : 'headImage'} 
+              style={{backgroundImage:'url('+placeHolderImage+')',width:currentImage.placeHolder.width,height:currentImage.placeHolder.height,transform: `translate(${currentImage.placeHolder.x-currentImage.placeHolder.width*0.5}px, ${currentImage.placeHolder.y-currentImage.placeHolder.height*0.5}px) rotate(${currentImage.placeHolder.rot}deg) scale(${currentImage.placeHolder.scale})`}}
+            >
+              <p style={{fontSize:currentImage.placeHolder.width*0.1}}>請選擇頭像</p>
+            </div>
           )}
 
           </div>
@@ -393,13 +429,13 @@ function Editor(props) {
 
       {screen.screenWidth<=768||screen.screenHeight<=768? (
         <div className='editorBottom'>
-          <div className={imageIndex>0?'pageArrow':'pageArrow disabled'} onClick={() => {if(imageIndex>0){store.dispatch({type:'SELECT_IMAGE',id:images[imageIndex-1].id}); setImageIndex(imageIndex-1);}}}>
+          <div className={currentImageIndex>0?'pageArrow':'pageArrow disabled'} onClick={() => {if(currentImageIndex>0){store.dispatch({type:'SELECT_IMAGE',id:images[currentImageIndex-1].id});}}}>
             <Icon path={mdiArrowLeftBold} size={0.8} rotate={0} color="#DDDDDD" style={{transform:`translate(0.5px,0.5px)`}}/>
           </div>
 
-          <div className='pageNumber'>第 {imageIndex+1} 張</div>
+          <div className='pageNumber'>第 {currentImageIndex+1} 張</div>
           
-          <div className={imageIndex<images.length-1?'pageArrow':'pageArrow disabled'} onClick={() => {if(imageIndex<images.length-1){store.dispatch({type:'SELECT_IMAGE',id:images[imageIndex+1].id}); setImageIndex(imageIndex+1);}}}>
+          <div className={currentImageIndex<images.length-1?'pageArrow':'pageArrow disabled'} onClick={() => {if(currentImageIndex<images.length-1){store.dispatch({type:'SELECT_IMAGE',id:images[currentImageIndex+1].id});}}}>
             <Icon path={mdiArrowLeftBold} size={0.8} color="#DDDDDD" style={{transform:`translate(1.5px,0.5px) rotate(180deg)`}}/>
           </div>
         </div>
@@ -408,6 +444,5 @@ function Editor(props) {
     </div>
   );
 }
-
 
 export default Editor;

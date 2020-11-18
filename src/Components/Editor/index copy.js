@@ -134,29 +134,6 @@ function Editor(props) {
     let rot = scaleStart.rotation + (Math.atan2(y,  x) / Math.PI * 180 + 45);
     setPlaceHolderInfo({width:placeHolderInfo.width,height:placeHolderInfo.height,x:placeHolderInfo.x,y:placeHolderInfo.y,rot:rot,scale:scale});
   }
-
-  const handleScaleMobileStart = (touches) => {
-    setIsScaling(true);
-    // console.log(touches);
-
-    // console.log( Math.hypot(touches[0].clientX-touches[1].clientX,touches[0].clientY-touches[1].clientY) );
-
-    setScaleMobileStart({
-      dist: Math.hypot(touches[0].clientX-touches[1].clientX,touches[0].clientY-touches[1].clientY),
-      scale:placeHolderInfo.scale,
-      rotation:placeHolderInfo.rot,
-    });
-  }
-
-  const handleScaleMobileMove = (touches) => {
-    console.log( Math.hypot(touches[0].clientX-touches[1].clientX,touches[0].clientY-touches[1].clientY) );
-    // let x = ev.clientX - scaleStart.centerX;
-    // let y = ev.clientY - scaleStart.centerY; 
-    // let scale = scaleStart.scale*Math.hypot(x,y)/scaleStart.dist;
-    // if (scale<SCALE_MIN) scale = SCALE_MIN;
-    // let rot = scaleStart.rotation + (Math.atan2(y,  x) / Math.PI * 180 + 45);
-    // setPlaceHolderInfo({width:placeHolderInfo.width,height:placeHolderInfo.height,x:placeHolderInfo.x,y:placeHolderInfo.y,rot:rot,scale:scale});
-  }
   
   const handleEnd = () => {
     console.log('end');

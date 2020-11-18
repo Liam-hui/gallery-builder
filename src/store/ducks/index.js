@@ -101,6 +101,15 @@ const screenReducer = ( state = {}, action ) => {
   }
 }
 
+const modeReducer = ( state = null, action ) => {
+  switch( action.type ) {
+    case 'SELECT_MODE':
+      return action.mode;
+      
+    default: return state;
+  }
+}
+
 const reducers = combineReducers({
   default: () => [],
 
@@ -115,6 +124,8 @@ const reducers = combineReducers({
   iconId: iconIdReducer,
 
   screen: screenReducer,
+
+  mode: modeReducer,
 
 });
 
