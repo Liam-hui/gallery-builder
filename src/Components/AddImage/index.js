@@ -7,7 +7,7 @@ function AddImage(props) {
 
   const iconId = useSelector(state => state.iconId);
   const mode = useSelector(state => state.mode);
-  const screen = useSelector(state => state.screen);
+  const display = useSelector(state => state.display);
   const images = useSelector(state => state.images);
 
   async function handleFileUpload(e) {
@@ -21,7 +21,9 @@ function AddImage(props) {
         let image = new Image();
         image.src = URL.createObjectURL(file);;
         image.onload = function () {
-          store.dispatch({type:'ADD_ICON',icon:{url:this.src,height:this.height,width:this.width,id:currentId+index}})
+          console.log(new Date());
+          if(mode=='user') store.dispatch({type:'ADD_ICON',icon:{url:this.src,height:this.height,width:this.width,id:Math.random().toString(36).substr(2, 9)}})
+          else if(mode=='admin') store.dispatch({type:'ADD_IMAGE',image:{url:this.src,height:this.height,width:this.width,id:Math.random().toString(36).substr(2, 9)}})
         };
       });
 
@@ -56,14 +58,14 @@ function AddImage(props) {
 
 
   return (
-    <div className={mode=='user'&&screen.screenWidth>768&&screen.screenHeight>768?"actionContainer block":"actionContainer"}>
+    <div className={display=='large'?"actionContainer block":"actionContainer"}>
 
-      {mode=='user'?(
-        <>
+      {/* {mode=='user'?(
+        <> */}
           <label for="add-image">上傳圖片</label>
           <input onChange={handleFileUpload} type="file" id="add-image" name="uploadPhotoInput" accept="image/*" multiple="multiple"/>
-        </>
-      ):null}
+        {/* </>
+      ):null} */}
       
       <label onClick={save}>儲存</label>
 

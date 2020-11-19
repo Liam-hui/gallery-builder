@@ -10,6 +10,7 @@ import { mdiRedoVariant } from '@mdi/js';
 function TopBar(props) {
   const mode = useSelector(state => state.mode);
   const screen = useSelector(state => state.screen);
+  const display = useSelector(state => state.display);
 
   return (
     <div className="topBarContainer">
@@ -22,7 +23,7 @@ function TopBar(props) {
         重做
       </div>
 
-      {mode=='admin'||screen.screenHeight<=768||screen.screenWidth<=768? <AddImage/>:null}
+      {display=='large'? null:<AddImage/>}
     </div>
   );
 }

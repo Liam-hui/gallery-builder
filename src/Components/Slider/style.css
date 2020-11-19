@@ -8,9 +8,9 @@
   position: relative;
 }
 
-.sliderContainer.isAdmin {
+/* .sliderContainer.isAdmin {
   justify-content: center;
-}
+} */
 
 .sliderContainer.vertical {
   overflow-x: hidden;

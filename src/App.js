@@ -105,6 +105,7 @@ function App() {
 
   let query = useQuery();
   const mode = useSelector(state => state.mode);
+  const display = useSelector(state => state.display);
   const screen = useSelector(state => state.screen);
 
   //execute when resizing finish
@@ -114,30 +115,44 @@ function App() {
     resizeLoop = setTimeout(doneResizing, 500);
   });
   function doneResizing(){
+    initScreen();
+  }
+
+  const initScreen = () => {
     store.dispatch({type:'SET_SCREEN',screenWidth:window.innerWidth,screenHeight:window.innerHeight,orientation:window.matchMedia("(orientation: portrait)")? 'landscape':'portrait'});
-    // console.log(window.innerHeight,window.innerWidth);
+    
+    let display;
+    if(window.innerWidth>768||window.innerHeight>768) display = 'large';
+    else if(window.innerHeight>=window.innerWidth) display = 'smallPort';
+    else display = 'smallLand';
+    store.dispatch({type:'SET_DISPLAY',display:display});
   }
 
   useEffect(() => {
-    // console.log('a',query.get('id'));
+    initScreen();
+
     let mode = query.get('mode');
     if (mode==null) mode = 'admin';
 
     store.dispatch({type:'SELECT_MODE',mode:mode});
-
     store.dispatch({type:'SET_IMAGES',images:temp_images});
-    store.dispatch({type:'SET_SCREEN',screenWidth:window.innerWidth,screenHeight:window.innerHeight,orientation:window.matchMedia("(orientation: portrait)")? 'landscape':'portrait'});
   }, []);
 
   return (
     <div className={isMobile? "appContainer isMobile":"appContainer isDesktop"} style={{height:screen.screenHeight}}>
 
       {mode=='user' && (screen.screenWidth>768 || screen.screenHeight<screen.screenWidth)?  <IconsList/>:null}
+      {mode=='admin' && screen.screenWidth<768 && screen.screenHeight<768 && screen.screenHeight<screen.screenWidth?  <ImagesList/>:null}
       
       <div style={{flex:1}} className='ColumnRevContainer'>
-        {screen.screenHeight>768 || (screen.screenHeight>=screen.screenWidth && mode=='user')?(
+        {display!='smallLand'?(
           <div className="bottomRow">
-            {screen.screenWidth>768? <ImagesList/>:<IconsList/>}
+            {mode=='user'?
+              <>
+                {screen.screenWidth>768? <ImagesList/>:<IconsList/>}
+              </>
+              :<ImagesList/>
+            }
           </div>
         ):null} 
         <Editor/>

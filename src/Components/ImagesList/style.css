@@ -1,0 +1,8 @@
+.imagesListContainer {
+    position: relative;
+    display:flex;
+    /* flex-direction: column-reverse;
+    -webkit-box-shadow: 8px 0px 4px -4px rgba(0,0,0,0.1);
+    -moz-box-shadow: 8px 0px 4px -4px rgba(0,0,0,0.1);
+    box-shadow: 4px 0px 10px -4px rgba(0,0,0,0.1); */
+  }

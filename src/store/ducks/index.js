@@ -17,10 +17,10 @@ const imagesReducer = ( state = [], action ) => {
       return action.images;
     case 'ADD_IMAGE':
       return state.concat(action.image);
-    // case 'UPDATE_PLACEHOLDER':
-    //   state_new = state.slice();
-    //   state_new.find(image => image.id == action.id).placeHolder = action.placeHolder;
-    //   return state_new;
+    case 'UPDATE_STEP':
+      state_new = state.slice();
+      state_new.find(image => image.id == action.id).step = action.step;
+      return state_new;
     case 'UPDATE_ICONINFO':
       state_new = state.slice();
       state_new.find(image => image.id == action.id).iconInfo = action.iconInfo;
@@ -110,6 +110,15 @@ const modeReducer = ( state = null, action ) => {
   }
 }
 
+const displayReducer = ( state = null, action ) => {
+  switch( action.type ) {
+    case 'SET_DISPLAY':
+      return action.display;
+      
+    default: return state;
+  }
+}
+
 const reducers = combineReducers({
   default: () => [],
 
@@ -126,6 +135,8 @@ const reducers = combineReducers({
   screen: screenReducer,
 
   mode: modeReducer,
+
+  display: displayReducer,
 
 });
 
