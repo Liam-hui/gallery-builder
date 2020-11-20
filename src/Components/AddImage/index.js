@@ -5,6 +5,8 @@ import { useSelector } from "react-redux";
 
 function AddImage(props) {
 
+  const {border} = props;
+
   const iconId = useSelector(state => state.iconId);
   const mode = useSelector(state => state.mode);
   const display = useSelector(state => state.display);
@@ -47,28 +49,25 @@ function AddImage(props) {
       }));
     }
     else if(mode=='admin'){
-      console.log(images.map(image=>{
-        let output = {};
-        output.id = image.id;
-        output.placeHolderInfo = image.iconInfo;
-        return JSON.stringify(output);
-      }));
+      // console.log(images.map(image=>{
+      //   let output = {};
+      //   output.id = image.id;
+      //   output.placeHolderInfo = image.iconInfo;
+      //   return JSON.stringify(output);
+      // }));
+      console.log(images);
     }
   }
 
+  let className = '';
+  if(display=='large') className += ' block';
+  if(border) className += ' border';
 
   return (
-    <div className={display=='large'?"actionContainer block":"actionContainer"}>
-
-      {/* {mode=='user'?(
-        <> */}
-          <label for="add-image">上傳圖片</label>
-          <input onChange={handleFileUpload} type="file" id="add-image" name="uploadPhotoInput" accept="image/*" multiple="multiple"/>
-        {/* </>
-      ):null} */}
-      
-      <label onClick={save}>儲存</label>
-
+    <div className={"actionContainer"+className}>
+      <label className='borderBox' for="add-image">上傳圖片</label>
+      <input onChange={handleFileUpload} type="file" id="add-image" name="uploadPhotoInput" accept="image/*" multiple="multiple"/>
+      <label className='borderBox' onClick={save}>儲存</label>
     </div>
   );
 }

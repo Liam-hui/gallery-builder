@@ -13,14 +13,14 @@ function Slider(props) {
   const mode = useSelector(state => state.mode);
   const screen = useSelector(state => state.screen);
 
-  const {vertical,images,selectedId,selectedText,selectItem,deleteItem,canDelete} = props;
+  const {vertical,images,selectedId,selectedText,selectItem,deleteItem,canDelete,border} = props;
 
   const [highlighted,setHighlighted] = useState(-1);
 
   let WIDTH,HEIGHT;
   if(screen.screenWidth>768 && screen.screenHeight>768) {
-    if(vertical) {WIDTH=180;HEIGHT=100;}
-    else {WIDTH=230;HEIGHT=100;}
+    if(vertical) {WIDTH=150;HEIGHT=100;}
+    else {WIDTH=200;HEIGHT=100;}
   }
   else {
     if(vertical) {WIDTH=100;HEIGHT=100;}
@@ -42,6 +42,7 @@ function Slider(props) {
     let className = '';
     if(selectedId==image.id) className += ' selected';
     if(highlighted==image.id) className += ' pressed';
+    if(border) className += ' border';
     
     return(
       <div className={"sliderImageWrapper"+className} style={{ width:WIDTH, height:HEIGHT, "--slider-image-width": WIDTH+'px', "--slider-image-height": HEIGHT+'px' }}>
@@ -59,11 +60,11 @@ function Slider(props) {
           ):null}
         </div>
 
-        <div className="statusWrapper">
+        {/* <div className="statusWrapper">
           <div className="statusWrapperBox">
             {selectedText}
           </div>
-        </div>
+        </div> */}
 
         {canDelete&&isMobile?(
           <div className="deleteButtonClickArea" onClick={()=>{if(highlighted==image.id)deleteItem(image.id)}}>

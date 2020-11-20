@@ -22,14 +22,11 @@ function ImagesList() {
     <div className="imagesListContainer" style={containerStyle}>
 
       {mode=='admin'&&display=='large'?
-        <>
-          <div style={{width:50}}/>
-          <AddImage/>
-        </>
+        <AddImage border={true}/>
         :null
       }
 
-      <Slider vertical={display=='smallLand'} images={images} selectedId={imageSelected} selectedText={'圖片編輯中'} selectItem={(id)=>store.dispatch({type:'SELECT_IMAGE',id:id})} 
+      <Slider border={true} vertical={display=='smallLand'} images={images} selectedId={imageSelected} selectedText={'圖片編輯中'} selectItem={(id)=>store.dispatch({type:'SELECT_IMAGE',id:id})} 
         deleteItem={(id)=>{
             if(imageSelected==id) {
               let index = images.findIndex(image => image.id == imageSelected);

@@ -27,7 +27,7 @@ function IconsList(props) {
 
       {display=='large'?<AddImage/>:null}
 
-        <Slider vertical={display!='smallPort'} images={icons} canDelete={true} selectedId={image()?image().iconSelected:-1} selectedText={'已選擇'}
+        <Slider border={false} vertical={display!='smallPort'} images={icons} canDelete={true} selectedId={image()?image().iconSelected:-1} selectedText={'已選擇'}
           selectItem={(id)=>{
             if(imageSelected!=-1) store.dispatch({type:'SELECT_ICON',iconId:id,id:imageSelected});
           }}

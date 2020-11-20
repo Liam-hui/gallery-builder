@@ -59,11 +59,10 @@
 .sliderImageWrapper {
   animation: sliderImageSlideIn 0.8s ease-out 0s, fadeIn 2s ease-in-out 0s;
   flex-shrink: 0;
-  padding: 10px 10px 10px 10px;
+  padding: 20px;
   position: relative;
   overflow: visible;  
 }
-
 
 .sliderImageWrapper.pressed {
   background-color:rgba(200,200,200,0.4);
@@ -85,17 +84,38 @@
   position: relative;
   box-sizing: border-box;
   transition: transform 0.2s ease-in; 
+  background-color: rgb(100,100,100);
 }
 
-.isDesktop .sliderImageWrapper:hover .sliderImage{
-  transform:translateY(-50%) scale(1.12);
-  transition: transform 0.2s ease-in;
+.border .sliderImage {
+  border: 1px solid black; 
 }
 
-.isDesktop .sliderImageWrapper:hover .sliderImage img{
-  opacity: 0.55;
+.sliderImage::after{
+  content :'';
+  position: absolute;
+  top:0;
+  left:0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  background-color: rgba(100,100,100,0.6);
+  opacity: 0;
   transition: opacity 0.2s ease-in;
 }
+
+.isDesktop .sliderImageWrapper:hover .sliderImage::after{
+  opacity: 1;
+}
+
+
+.sliderImage img{
+  opacity: 0.8;
+}
+
+/* .isDesktop .sliderImageWrapper:hover .sliderImage img{
+  opacity: 0.55;
+} */
 
 .isDesktop .sliderImageWrapper:hover .deleteButton{
   opacity: 1;
@@ -121,14 +141,19 @@
   opacity: 1;
 }
 
+.selected.sliderImageWrapper{
+  /* border: 1px solid black;  */
+  /* background-color: black; */
+}
+
 .selected .sliderImage {
-  transform:translateY(-50%) scale(1.05);
-  transition: transform 0.17s ease-in;
+  /* transform:translateY(-50%) scale(1.05);
+  transition: transform 0.17s ease-in; */
 }
 
 .selected .sliderImage img {
-  opacity: 0.74;
-  transition: opacity 0.17s ease-in;
+  /* opacity: 0.74;
+  transition: opacity 0.17s ease-in; */
 }
 
 .statusWrapperBox {

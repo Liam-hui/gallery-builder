@@ -25,6 +25,10 @@ const imagesReducer = ( state = [], action ) => {
       state_new = state.slice();
       state_new.find(image => image.id == action.id).iconInfo = action.iconInfo;
       return state_new;
+    case 'UPDATE_TEXTINFO':
+      state_new = state.slice();
+      state_new.find(image => image.id == action.id).textInfo = action.textInfo;
+      return state_new;
     case 'DELETE_IMAGE':
       state_new = state.slice();
       state_new = state_new.filter(image => image.id != action.id);

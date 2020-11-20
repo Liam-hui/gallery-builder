@@ -41,3 +41,14 @@
     pointer-events: unset;
   }
 }
+
+.borderBox {
+  border: 1px solid black;
+  color: black;
+  transition: all 0.22s ease-in ;
+}
+
+.isDesktop .borderBox:hover{
+  color: white;
+  background-color: black;
+}
