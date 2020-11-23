@@ -60,11 +60,11 @@ function Slider(props) {
           ):null}
         </div>
 
-        {/* <div className="statusWrapper">
+        <div className="statusWrapper">
           <div className="statusWrapperBox">
             {selectedText}
           </div>
-        </div> */}
+        </div>
 
         {canDelete&&isMobile?(
           <div className="deleteButtonClickArea" onClick={()=>{if(highlighted==image.id)deleteItem(image.id)}}>

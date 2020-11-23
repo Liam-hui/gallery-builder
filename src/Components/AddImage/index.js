@@ -2,12 +2,13 @@ import './style.css';
 import React, { useState, useEffect, useRef } from 'react';
 import store from '../../store';
 import { useSelector } from "react-redux";
+import {Services} from '../../services';
 
 function AddImage(props) {
 
   const {border} = props;
 
-  const iconId = useSelector(state => state.iconId);
+  const status = useSelector(state => state.status);
   const mode = useSelector(state => state.mode);
   const display = useSelector(state => state.display);
   const images = useSelector(state => state.images);
@@ -17,19 +18,34 @@ function AddImage(props) {
       const files = e.target.files;
       if (!files) return;
 
-      let currentId = iconId;
+      // Array.from(files).forEach((file,index,array)  => {
+      //   console.log(file);
+      //   let image = new Image();
+      //   image.src = URL.createObjectURL(file);;
+      //   image.onload = function () {
+      //     console.log(new Date());
+      //     if(mode=='user') store.dispatch({type:'ADD_ICON',icon:{url:this.src,height:this.height,width:this.width,id:Math.random().toString(36).substr(2, 9)}})
+      //     else if(mode=='admin') store.dispatch({type:'ADD_IMAGE',image:{url:this.src,height:this.height,width:this.width,id:Math.random().toString(36).substr(2, 9)}})
+      //   };
+      // });
+
 
       Array.from(files).forEach((file,index,array)  => {
-        let image = new Image();
-        image.src = URL.createObjectURL(file);;
-        image.onload = function () {
-          console.log(new Date());
-          if(mode=='user') store.dispatch({type:'ADD_ICON',icon:{url:this.src,height:this.height,width:this.width,id:Math.random().toString(36).substr(2, 9)}})
-          else if(mode=='admin') store.dispatch({type:'ADD_IMAGE',image:{url:this.src,height:this.height,width:this.width,id:Math.random().toString(36).substr(2, 9)}})
-        };
-      });
 
-      store.dispatch({type:'UPDATE_ICON_ID',id:currentId+Array.from(files).length});
+        let reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = function () {
+          let image = new Image();
+          console.log(reader.result);
+          image.onload = function () {
+            if(mode=='user') Services.userUploadIcon({base64:reader.result});
+            else if(mode=='admin') Services.adminUploadPhoto({base64:reader.result,width:this.width,height:this.height});
+          };
+          image.src = reader.result;
+        };
+        
+        
+      });
 
     } catch (error) {
       alert(error);
@@ -41,21 +57,10 @@ function AddImage(props) {
 
   const save = () => {
     if(mode=='user'){
-      console.log(images.map(image=>{
-        let output = {};
-        output.id = image.id;
-        output.iconInfo = image.iconInfo;
-        return output;
-      }));
+      Services.userUpdatePhotos(images);
     }
     else if(mode=='admin'){
-      // console.log(images.map(image=>{
-      //   let output = {};
-      //   output.id = image.id;
-      //   output.placeHolderInfo = image.iconInfo;
-      //   return JSON.stringify(output);
-      // }));
-      console.log(images);
+      Services.adminUpdatePhotos(images);
     }
   }
 
@@ -68,6 +73,7 @@ function AddImage(props) {
       <label className='borderBox' for="add-image">上傳圖片</label>
       <input onChange={handleFileUpload} type="file" id="add-image" name="uploadPhotoInput" accept="image/*" multiple="multiple"/>
       <label className='borderBox' onClick={save}>儲存</label>
+      {mode=='user'?<label className='borderBox' onClick={save}>完成</label>:null}
     </div>
   );
 }

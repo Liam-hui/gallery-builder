@@ -99,7 +99,7 @@
   width: 100%;
   height: 100%;
   pointer-events: none;
-  background-color: rgba(100,100,100,0.6);
+  background-color: rgba(100,100,100,0.7);
   opacity: 0;
   transition: opacity 0.2s ease-in;
 }
@@ -112,10 +112,6 @@
 .sliderImage img{
   opacity: 0.8;
 }
-
-/* .isDesktop .sliderImageWrapper:hover .sliderImage img{
-  opacity: 0.55;
-} */
 
 .isDesktop .sliderImageWrapper:hover .deleteButton{
   opacity: 1;
@@ -141,20 +137,10 @@
   opacity: 1;
 }
 
-.selected.sliderImageWrapper{
-  /* border: 1px solid black;  */
-  /* background-color: black; */
+.selected .sliderImage::after{
+  opacity: 0.7;
 }
 
-.selected .sliderImage {
-  /* transform:translateY(-50%) scale(1.05);
-  transition: transform 0.17s ease-in; */
-}
-
-.selected .sliderImage img {
-  /* opacity: 0.74;
-  transition: opacity 0.17s ease-in; */
-}
 
 .statusWrapperBox {
   background-color: rgba(255,255,255,0.3);

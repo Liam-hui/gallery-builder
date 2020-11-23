@@ -67,7 +67,6 @@ function Editor(props) {
     if(currentImageIndex==null&&images.length>0) {
       store.dispatch({type:'SELECT_IMAGE',id:images[0].id});
     }
-
   }, [images]);
  
   useEffect(() => {
@@ -191,15 +190,27 @@ function Editor(props) {
 
         saveStep(iconInfo,'headObject');
       }
-      else iconInfo = currentImage.iconInfo;
+      else {
+        iconInfo = currentImage.iconInfo;
+        iconInfo.width = PLACEHOLDER_SIZE;
+        iconInfo.height = PLACEHOLDER_SIZE;
+        iconInfo.scale = iconInfo.size[0]/iconInfo.width;
+      }
       setIconInfo(iconInfo);
     }
     else if (mode=='user' && currentIcon!=null) {
       if(currentImage.iconInfo == null) {
-        iconInfo = currentImage.placeHolder;
+        console.log(currentImage.placeHolder);
+        iconInfo.x = currentImage.placeHolder.x;
+        iconInfo.y = currentImage.placeHolder.y;
+        iconInfo.rot = currentImage.placeHolder.rot;
+        iconInfo.width = PLACEHOLDER_SIZE;
+        iconInfo.height = PLACEHOLDER_SIZE;
+        iconInfo.scale = currentImage.placeHolder.size[0]/PLACEHOLDER_SIZE;
         saveStep(iconInfo,'headObject');
       }
       else iconInfo = currentImage.iconInfo;
+
       iconInfo.scale *= (iconInfo.width/currentIcon.width + iconInfo.height/currentIcon.height)*0.5;
       iconInfo.width = currentIcon.width;
       iconInfo.height = currentIcon.height;
@@ -268,11 +279,11 @@ function Editor(props) {
   }
 
   const handleDragMove = (ev) => {
+    console.log('asdf');
     let x = (ev.clientX - dragStart.x)/editorScale;
     let y = (ev.clientY - dragStart.y)/editorScale;
     setInfo({...objectInfo,  ...{x:dragStart.startX+x,y:dragStart.startY+y} });
-    // setIconInfo({width:iconInfo.width,height:iconInfo.height,x:dragStart.startX+x,y:dragStart.startY+y,rot:iconInfo.rot,scale:iconInfo.scale,flip:iconInfo.flip});
-
+   
     setIsMoved(true);
   }
 
@@ -596,7 +607,7 @@ function Editor(props) {
             <div id='editorImage' className={isChanging?'changing':null} style={{backgroundImage:'url('+currentImage.url+')',width:currentImage.width,height:currentImage.height,transform: `scale(${editorScale})`}}>
 
             {/* text */}
-            {mode=='admin'? (
+            {/* {mode=='admin'? (
                 <>{textObject}</>
               ):(
                 <div className='textBox' style={{
@@ -606,14 +617,14 @@ function Editor(props) {
                 }}>
                   <input className='textInput' type="text" id="fname" name="fname"></input>
                 </div>
-            )}
+            )} */}
 
             {/* head */}
             {mode=='admin' || (currentImage.iconSelected!=undefined && currentImage.iconSelected!=-1)? (
               <>{headObject}</>
             ):(
               <div className={currentImage.iconSelected && currentImage.iconSelected!=-1? 'headImage hidden' : 'headImage'} 
-                style={{backgroundImage:`url(${placeHolderImage})`,width:currentImage.placeHolder.width,height:currentImage.placeHolder.height,transform: `translate(${currentImage.placeHolder.x-currentImage.placeHolder.width*0.5}px, ${currentImage.placeHolder.y-currentImage.placeHolder.height*0.5}px) rotate(${currentImage.placeHolder.rot}deg) scale(${currentImage.placeHolder.scale})`}}
+                style={{backgroundImage:`url(${placeHolderImage})`,width:PLACEHOLDER_SIZE,height:PLACEHOLDER_SIZE,transform: `translate(${currentImage.placeHolder.x-PLACEHOLDER_SIZE*0.5}px, ${currentImage.placeHolder.y-PLACEHOLDER_SIZE*0.5}px) rotate(${currentImage.placeHolder.rot}deg) scale(${currentImage.placeHolder.size[0]/PLACEHOLDER_SIZE})`}}
               >
                 <p style={{fontSize:currentImage.placeHolder.width*0.1}}>請選擇頭像</p>
               </div>

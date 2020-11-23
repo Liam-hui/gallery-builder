@@ -123,6 +123,15 @@ const displayReducer = ( state = null, action ) => {
   }
 }
 
+const statusReducer = ( state = null, action ) => {
+  switch( action.type ) {
+    case 'SET_STATUS':
+      return action.status;
+      
+    default: return state;
+  }
+}
+
 const reducers = combineReducers({
   default: () => [],
 
@@ -141,6 +150,8 @@ const reducers = combineReducers({
   mode: modeReducer,
 
   display: displayReducer,
+
+  status: statusReducer,
 
 });
 
