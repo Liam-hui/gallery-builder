@@ -29,6 +29,10 @@ const imagesReducer = ( state = [], action ) => {
       state_new = state.slice();
       state_new.find(image => image.id == action.id).textInfo = action.textInfo;
       return state_new;
+    case 'ADD_TITLE_IMAGE':
+      state_new = state.slice();
+      state_new.find(image => image.id == action.id).textInfo.image = action.image;
+      return state_new;
     case 'DELETE_IMAGE':
       state_new = state.slice();
       state_new = state_new.filter(image => image.id != action.id);
@@ -105,15 +109,6 @@ const screenReducer = ( state = {}, action ) => {
   }
 }
 
-const modeReducer = ( state = null, action ) => {
-  switch( action.type ) {
-    case 'SELECT_MODE':
-      return action.mode;
-      
-    default: return state;
-  }
-}
-
 const displayReducer = ( state = null, action ) => {
   switch( action.type ) {
     case 'SET_DISPLAY':
@@ -123,7 +118,7 @@ const displayReducer = ( state = null, action ) => {
   }
 }
 
-const statusReducer = ( state = null, action ) => {
+const statusReducer = ( state = {mode:null}, action ) => {
   switch( action.type ) {
     case 'SET_STATUS':
       return action.status;
@@ -146,8 +141,6 @@ const reducers = combineReducers({
   iconId: iconIdReducer,
 
   screen: screenReducer,
-
-  mode: modeReducer,
 
   display: displayReducer,
 

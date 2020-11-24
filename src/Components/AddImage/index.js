@@ -9,7 +9,6 @@ function AddImage(props) {
   const {border} = props;
 
   const status = useSelector(state => state.status);
-  const mode = useSelector(state => state.mode);
   const display = useSelector(state => state.display);
   const images = useSelector(state => state.images);
 
@@ -24,8 +23,8 @@ function AddImage(props) {
       //   image.src = URL.createObjectURL(file);;
       //   image.onload = function () {
       //     console.log(new Date());
-      //     if(mode=='user') store.dispatch({type:'ADD_ICON',icon:{url:this.src,height:this.height,width:this.width,id:Math.random().toString(36).substr(2, 9)}})
-      //     else if(mode=='admin') store.dispatch({type:'ADD_IMAGE',image:{url:this.src,height:this.height,width:this.width,id:Math.random().toString(36).substr(2, 9)}})
+      //     if(status.mode=='user') store.dispatch({type:'ADD_ICON',icon:{url:this.src,height:this.height,width:this.width,id:Math.random().toString(36).substr(2, 9)}})
+      //     else if(status.mode=='admin') store.dispatch({type:'ADD_IMAGE',image:{url:this.src,height:this.height,width:this.width,id:Math.random().toString(36).substr(2, 9)}})
       //   };
       // });
 
@@ -38,8 +37,8 @@ function AddImage(props) {
           let image = new Image();
           console.log(reader.result);
           image.onload = function () {
-            if(mode=='user') Services.userUploadIcon({base64:reader.result});
-            else if(mode=='admin') Services.adminUploadPhoto({base64:reader.result,width:this.width,height:this.height});
+            if(status.mode=='user') Services.userUploadIcon({base64:reader.result});
+            else if(status.mode=='admin') Services.adminUploadPhoto({base64:reader.result,width:this.width,height:this.height});
           };
           image.src = reader.result;
         };
@@ -56,10 +55,10 @@ function AddImage(props) {
   }
 
   const save = () => {
-    if(mode=='user'){
+    if(status.mode=='user'){
       Services.userUpdatePhotos(images);
     }
-    else if(mode=='admin'){
+    else if(status.mode=='admin'){
       Services.adminUpdatePhotos(images);
     }
   }
@@ -73,7 +72,7 @@ function AddImage(props) {
       <label className='borderBox' for="add-image">上傳圖片</label>
       <input onChange={handleFileUpload} type="file" id="add-image" name="uploadPhotoInput" accept="image/*" multiple="multiple"/>
       <label className='borderBox' onClick={save}>儲存</label>
-      {mode=='user'?<label className='borderBox' onClick={save}>完成</label>:null}
+      {status.mode=='user'?<label className='borderBox' onClick={save}>完成</label>:null}
     </div>
   );
 }

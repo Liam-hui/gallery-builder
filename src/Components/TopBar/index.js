@@ -8,7 +8,7 @@ import Icon from '@mdi/react'
 import { mdiRedoVariant } from '@mdi/js';
 
 function TopBar(props) {
-  const mode = useSelector(state => state.mode);
+  const status = useSelector(state => state.status);
   const screen = useSelector(state => state.screen);
   const display = useSelector(state => state.display);
 

@@ -1,6 +1,6 @@
 .actionContainer {
   display: flex;
-  z-index: 99999;
+  /* z-index: 99999; */
 
   margin-left:auto;
   flex-direction: row;
@@ -12,14 +12,11 @@
   font-size: 14px;
   width:80px;
   margin-left:10px;
-  color: black;
-  border: 1px solid black;
   position: relative;
   height: 33px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.22s ease-in ;
 }
 
 
@@ -47,11 +44,6 @@
   opacity: 0;
   position: absolute;
   z-index: -1;
-}
-
-.isDesktop .actionContainer label:hover{
-  color: white;
-  background-color: black;
 }
 
 

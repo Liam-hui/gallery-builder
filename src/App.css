@@ -52,7 +52,7 @@
   height: 150px;
 
   align-items: center;
-  z-index: 999;
+  /* z-index: 999; */
 
   border-top: 1px solid black;
 

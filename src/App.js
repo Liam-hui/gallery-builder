@@ -12,29 +12,30 @@ import IconsList from './Components/IconsList';
 
 import {Services} from './services';
 
-function useQuery() {
-  return new URLSearchParams(useLocation().search);
-}
+// function useQuery() {
+//   return new URLSearchParams(useLocation().search);
+// }
 
 function App() {
 
-  let query = useQuery();
+  // let query = useQuery();
   const status = useSelector(state => state.status);
-  const mode = useSelector(state => state.mode);
   const display = useSelector(state => state.display);
   const screen = useSelector(state => state.screen);
 
   useEffect(() => {
     initScreen();
 
-    let mode = query.get('mode');
-    if (mode==null) mode = 'admin';
+    const mode = window.mode;
+    const product_id = window.product_id;
+    const order_id = window.order_id;
 
-    if(mode=='admin') Services.adminGetAlbumPhotos(5898975314070);
-    else if (mode=='user') Services.userGetPhotos('d8f5ca96-a092-4250-a8fa-1dc1b96b22d4',5898975314070);
+    console.log(mode,product_id,order_id);
 
-    store.dispatch({type:'SELECT_MODE',mode:mode});
-    store.dispatch({type:'SET_STATUS',status:{product_id:5898975314070}});
+    if(mode=='admin') Services.adminGetAlbumPhotos(product_id);
+    else if (mode=='user') Services.userGetPhotos(order_id,product_id);
+
+    store.dispatch({type:'SET_STATUS',status:{mode:mode,product_id:product_id,order_id:order_id}});
   }, []);
 
   //execute when resizing finish
@@ -57,16 +58,20 @@ function App() {
     store.dispatch({type:'SET_DISPLAY',display:display});
   }
 
-  return (
-    <div className={isMobile? "appContainer isMobile":"appContainer isDesktop"} style={{height:screen.screenHeight}}>
+  let className = '';
+  if(isMobile) className += ' isMobile'; else className += ' isDesktop';
+  className += ( ' ' + display);
 
-      {mode=='user' && (screen.screenWidth>768 || screen.screenHeight<screen.screenWidth)?  <IconsList/>:null}
-      {mode=='admin' && screen.screenWidth<768 && screen.screenHeight<768 && screen.screenHeight<screen.screenWidth?  <ImagesList/>:null}
+  return (
+    <div className={"appContainer"+className} style={{height:screen.screenHeight}}>
+
+      {status.mode=='user' && (screen.screenWidth>768 || screen.screenHeight<screen.screenWidth)?  <IconsList/>:null}
+      {status.mode=='admin' && screen.screenWidth<768 && screen.screenHeight<768 && screen.screenHeight<screen.screenWidth?  <ImagesList/>:null}
       
       <div style={{flex:1}} className='ColumnRevContainer'>
         {display!='smallLand'?(
           <div className="bottomRow">
-            {mode=='user'?
+            {status.mode=='user'?
               <>
                 {screen.screenWidth>768? <ImagesList/>:<IconsList/>}
               </>

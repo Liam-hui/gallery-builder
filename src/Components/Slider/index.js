@@ -10,7 +10,7 @@ import { mdiCloseThick } from '@mdi/js';
 
 function Slider(props) {
 
-  const mode = useSelector(state => state.mode);
+  const status = useSelector(state => state.status);
   const screen = useSelector(state => state.screen);
 
   const {vertical,images,selectedId,selectedText,selectItem,deleteItem,canDelete,border} = props;
@@ -18,7 +18,7 @@ function Slider(props) {
   const [highlighted,setHighlighted] = useState(-1);
 
   let WIDTH,HEIGHT;
-  if(screen.screenWidth>768 && screen.screenHeight>768) {
+  if(screen.screenWidth>768 || screen.screenHeight>768) {
     if(vertical) {WIDTH=150;HEIGHT=100;}
     else {WIDTH=200;HEIGHT=100;}
   }
@@ -69,7 +69,7 @@ function Slider(props) {
         {canDelete&&isMobile?(
           <div className="deleteButtonClickArea" onClick={()=>{if(highlighted==image.id)deleteItem(image.id)}}>
             <div className='deleteButton'>
-              <Icon path={mdiCloseThick} style={{transform:`translate(0.5px,0.5px)`,pointerEvents:'none'}} size={0.8} color="#DDDDDD"/>
+              <Icon path={mdiCloseThick} style={{transform:`translate(0.5px,0.5px)`,pointerEvents:'none'}} size={0.8} color="#CCCCCC"/>
             </div>
           </div>
         ):null}
@@ -86,7 +86,7 @@ function Slider(props) {
     )
   });
 
-  const isAdmin = mode=='admin'? ' isAdmin':'';
+  const isAdmin = status.mode=='admin'? ' isAdmin':'';
   const isVertical = vertical? ' vertical':'';
 
   return (

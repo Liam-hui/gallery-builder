@@ -1,7 +1,7 @@
 import api from './api';
 import store from '../store';
 
-const product_id = () => store.getState().status.product_id;
+const status = () => store.getState().status;
 
 export const Services = {
   get,
@@ -12,6 +12,7 @@ export const Services = {
   userGetPhotos,
   userUploadIcon,
   userUpdatePhotos,
+  titleToImage,
 };
 
 //get
@@ -44,8 +45,19 @@ function adminGetAlbumPhotos(product_id) {
         rot: photo.details.rotate,
       }
 
-      let textInfo = {
-      };
+      let textInfo = null;
+      if(photo.details.title!=null){
+        textInfo = {
+          height:photo.details.title.size[0],
+          width:photo.details.title.size[1],
+          scaleX:1,
+          scaleY:1,
+          scale:1,
+          x:photo.details.title.position[0],
+          y:photo.details.title.position[1],
+          rot:photo.details.title.rotate,
+        }
+      }
 
       let image = new Image();
       image.onload = function () {
@@ -60,7 +72,7 @@ function adminGetAlbumPhotos(product_id) {
 
 function adminUploadPhoto(photo) {
   let body = {
-    "product":product_id(),
+    "product":status().product_id,
     "photos":[
       {
         "type":"new",
@@ -83,9 +95,9 @@ function adminUploadPhoto(photo) {
   });
 }
 
-function adminDeletePhoto(photo_id) {
+function adminDeletePhoto(photo_id,deleteImage) {
   let body = {
-    "product":product_id(),
+    "product":status().product_id,
     "photos": [
       {
         "type":"delete",
@@ -96,42 +108,51 @@ function adminDeletePhoto(photo_id) {
   api.post('album/adminAddPhoto', body,{
   })
   .then((response) => {
-    if (response.data.message=='Success') store.dispatch({type:'DELETE_IMAGE',id:photo_id});
+    if (response.data.message=='Success') deleteImage();
   }, (error) => {
     console.log(error);
   });
 }
 
 function adminUpdatePhotos(photos) {
-  photos = photos.map(photo=>{ return(
-    {
+  console.log(photos);
+  photos = photos.map(photo=>{ 
+    let photoData = {
       "type":"update",
       "id":photo.id,
       "photo_details":{
         "position":[photo.iconInfo.x,photo.iconInfo.y],
         "size":[photo.iconInfo.height*photo.iconInfo.scale,photo.iconInfo.width*photo.iconInfo.scale],
-        "rotate":photo.iconInfo.rot
+        "rotate":photo.iconInfo.rot,
       }
     }
-  )});
+    if(photo.textInfo!=null) photoData.photo_details.title = {
+      "title":"test",
+      "position":[photo.textInfo.x,photo.textInfo.y],
+      "size":[photo.textInfo.height*photo.textInfo.scale*photo.textInfo.scaleY,photo.textInfo.width*photo.textInfo.scale*photo.textInfo.scaleX],
+      "rotate":photo.textInfo.rot,
+      "color":'#000000',
+    }
+    return photoData;
+  });
   let body = {
-    "product":product_id(),
+    "product":status().product_id,
     "photos":photos,
   }
-  api.post('album/adminAddPhoto', body,{
-  })
-  .then((response) => {
-    console.log(response.data);
-  }, (error) => {
-    console.log(error);
-  });
+  // api.post('album/adminAddPhoto', body,{
+  // })
+  // .then((response) => {
+  //   console.log(response.data);
+  // }, (error) => {
+  //   console.log(error);
+  // });
 }
 
 function userGetPhotos(order_id,product_id) {
   api.get('album/customer/customerCurrentEditing/'+order_id,{
   })
   .then((response) => {
-    console.log(response.data.data.photo_details[product_id]);
+    // console.log(response.data.data.photo_details[product_id]);
     for (const [id, photo] of Object.entries(response.data.data.photo_details[product_id])) {
 
       let textInfo = {
@@ -158,7 +179,7 @@ function userGetPhotos(order_id,product_id) {
 
 function userUploadIcon(icon) {
   let body = {
-    "customer":4375608950934,
+    "customer":status().customer_id,
     "img_base64":icon.base64
   }
   api.post('customer/saveCustomerPhoto', body,{
@@ -194,10 +215,9 @@ function userUpdatePhotos(photos) {
       },
     }
   })
-  console.log(photoDetails);
   let body = {
-    "product":product_id(),
-    "customer":4375608950934,
+    "product":status().product_id,
+    "customer":status().customer_id,
     "order":"d8f5ca96-a092-4250-a8fa-1dc1b96b22d4",
     "confirm":0,
     "photo_details": photoDetails,
@@ -221,6 +241,29 @@ function userUpdatePhotos(photos) {
   })
   .then((response) => {
     console.log(response.data);
+  }, (error) => {
+    console.log(error);
+  });
+}
+
+function titleToImage(photo_id,titleText) {
+  let body = {
+    "customer":null,
+    "photo_uuid":photo_id,
+    "title":titleText,
+    "mode":1
+}
+  api.post('album/textToImg', body,{
+  })
+  .then((response) => {
+    console.log(response.data);
+    if (response.data.message=='Success') {
+      let image = new Image();
+      image.onload = function () {
+        store.dispatch({type:'ADD_TITLE_IMAGE',id:photo_id,image:{url:this.src,height:this.height,width:this.width}});
+      };
+      image.src = 'data:image/jpg;base64,'+response.data.data.img_base64;
+    }
   }, (error) => {
     console.log(error);
   });

@@ -46,6 +46,7 @@
   border: 1px solid black;
   color: black;
   transition: all 0.22s ease-in ;
+  text-align: center;
 }
 
 .isDesktop .borderBox:hover{
