@@ -9,16 +9,14 @@ import { useLocation} from "react-router-dom";
 import Editor from './Components/Editor';
 import ImagesList from './Components/ImagesList';
 import IconsList from './Components/IconsList';
-
 import {Services} from './services';
 
-// function useQuery() {
-//   return new URLSearchParams(useLocation().search);
-// }
+import UploadFailPopUp from './Components/UploadFailPopUp';
+import {AddIconPopUp} from './Components/AddIconPopUp';
 
 function App() {
 
-  // let query = useQuery();
+  const overlay = useSelector(state => state.overlay);
   const status = useSelector(state => state.status);
   const display = useSelector(state => state.display);
   const screen = useSelector(state => state.screen);
@@ -79,6 +77,24 @@ function App() {
           </div>
         ):null} 
         <Editor/>
+      </div>
+
+      <div className={overlay!=null?'overlay':'overlay hidden'}>
+
+        <div className={overlay=='loading'?'overlayChildren':'overlayChildren hidden'}>
+          <div className='loading'>
+            <div className='loader'/>
+          </div>
+        </div>
+
+        <div className={overlay=='uploadIcon'?'overlayChildren':'overlayChildren hidden'}>
+          <AddIconPopUp/>
+        </div>
+
+        <div className={overlay=='uploadFail'?'overlayChildren':'overlayChildren hidden'}>
+          <UploadFailPopUp/>
+        </div>
+
       </div>
 
     </div>

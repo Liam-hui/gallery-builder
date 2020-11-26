@@ -4,6 +4,9 @@ import { useSelector } from "react-redux";
 import { CustomPicker } from 'react-color';
 import {Services} from '../../services';
 
+import Icon from '@mdi/react'
+import { mdiCloseThick } from '@mdi/js';
+
 const { Saturation, Hue } = require('react-color/lib/components/common');
 
 const inlineStyles = {
@@ -133,7 +136,6 @@ function TitleSetting(props) {
 
   const [titleText,setTitleText] = useState(null);
   const [showText,setShowText] = useState('');
-  const [middleText,setMiddleText] = useState('');
 
   const status = useSelector(state => state.status);
   const images = useSelector(state => state.images);
@@ -183,6 +185,8 @@ function TitleSetting(props) {
   }
 
   const saveTitle = () => {
+    props.setLoading(true);
+    props.toggle(false);
     if(status.mode=='admin'){
       Services.adminUpdatePhotos(
         [currentImage],
@@ -192,18 +196,21 @@ function TitleSetting(props) {
         //   }
         //   ,0),
         () => {
-          props.toggle(false);
-          Services.titleToImage(imageSelected,titleText);
+          Services.titleToImage(imageSelected,titleText,()=>props.setLoading(false));
         },
         props.hex
       );
     }
-    else if(status.mode=='user') Services.titleToImage(imageSelected,Services.realText(currentImage.textInfo.adminTitle,titleText));
+    else if(status.mode=='user') Services.titleToImage(imageSelected,Services.realText(currentImage.textInfo.adminTitle,titleText),()=>props.setLoading(false));
   }
 
   return (
     <div style={ inlineStyles.outer }>
       <div style={ inlineStyles.container}>
+        <div className='closeTextSetting' onClick={()=>{props.toggle(false);}}>
+          <Icon path={mdiCloseThick} style={{transform:`translate(0.5px,0.5px)`}} size={0.65} color="#DDDDDD"/>
+        </div>
+
         <div style={{...inlineStyles.topColor,  ...{backgroundColor:props.hex} }}/>
 
         <div style={{backgroundColor:'white'}}>

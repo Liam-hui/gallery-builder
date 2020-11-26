@@ -58,3 +58,87 @@
 
 }
 
+.overlay {
+  position: absolute;
+  z-index: 99999999;
+  background-color: rgba(255,255,255,0.4);
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s ease-in;
+}
+
+.overlay.hidden{
+  opacity: 0;
+  pointer-events: none;
+}
+
+.loading {
+  padding:10px;
+  border-radius: 20px;
+  opacity: 0.7;
+}
+
+.loader {
+  border: 10px solid #AAAAAA;
+  border-top: 10px solid #FFFFFF;
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  -webkit-animation: spin 2s linear infinite; /* Safari */
+  animation: spin 2s linear infinite;
+}
+
+.overlay.hidden .loader{
+  opacity: 0;
+  -webkit-animation: unset;
+  animation: unset;
+}
+
+/* Safari */
+@-webkit-keyframes spin {
+  0% { -webkit-transform: rotate(0deg); }
+  100% { -webkit-transform: rotate(360deg); }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.overlayChildren {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center; 
+  transition: opacity 0.2s ease-in;
+}
+
+.overlayBox{
+  border: 1px solid black;
+  width: 500px;
+  height:300px;
+  max-width: 80%;
+  background-color: white;
+  opacity: 0.9;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.overlayButton{
+  padding:10px 25px;
+  margin:0 20px;
+}
+
+.overlay .hidden{
+  pointer-events: none;
+  opacity: 0;
+}
+
+

@@ -1,0 +1,8 @@
+.iconBig{
+  width:100%;
+  height:60%;
+  background-size:  contain;   
+  background-repeat: no-repeat;
+  background-position: center;
+  margin:10px 10px 20px 10px;
+}

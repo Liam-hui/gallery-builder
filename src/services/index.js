@@ -77,6 +77,7 @@ function adminGetAlbumPhotos(product_id) {
 
 function adminUploadPhoto(photo) {
   let temp_id = Math.random().toString(36).substr(2, 9);
+  let size = Math.max(photo.width,photo.height)*0.2;
   let body = {
     "product":status().product_id,
     "photos":[
@@ -85,7 +86,7 @@ function adminUploadPhoto(photo) {
         "id":temp_id,
         "photo_details":{
           "position":[photo.width*0.5,photo.height*0.5],
-          "size":[500,500],
+          "size":[size,size],
           "rotate":0,
         },
         "img_base64":photo.base64,
@@ -94,9 +95,9 @@ function adminUploadPhoto(photo) {
   }
 
   let iconInfo = {
-    size: [300,300],
-    height:300,
-    width:300,
+    size: [size,size],
+    height:size,
+    width:size,
     x: photo.width*0.5,
     y: photo.height*0.5,
     rot: 0,
@@ -106,7 +107,10 @@ function adminUploadPhoto(photo) {
   api.post('album/adminAddPhoto', body,{
   })
   .then((response) => {
-    if (response.data.message=='Success') store.dispatch({type:'ADD_IMAGE',image:{url:photo.base64,height:photo.height,width:photo.width,id:response.data.data[temp_id],iconInfo:iconInfo}})
+    if (response.data.message=='Success') {
+      store.dispatch({type:'ADD_IMAGE',image:{url:photo.base64,height:photo.height,width:photo.width,id:response.data.data[temp_id],iconInfo:iconInfo}})
+      store.dispatch({type:'CLOSE_OVERLAY'});
+    }
   }, (error) => {
     console.log(error.response.data);
   });
@@ -243,9 +247,11 @@ function userUploadIcon(icon) {
         store.dispatch({type:'ADD_ICON',icon:{url:this.src,height:this.height,width:this.width,id:response.data.data.img_uuid}});
       };
       image.src = 'data:image/jpg;base64,'+response.data.data.img_base64;
+      store.dispatch({type:'CLOSE_OVERLAY'});
     }
   }, (error) => {
     console.log(error.response.data);
+    store.dispatch({type:'SET_OVERLAY',mode:'uploadFail'});
   });
 }
 
@@ -282,7 +288,7 @@ function userUpdatePhotos(photos) {
   });
 }
 
-function titleToImage(photo_id,titleText) {
+function titleToImage(photo_id,titleText,finishLoad) {
  
   let real_text = titleText;
   if (status().mode=='admin') real_text = realText(titleText,'Customer');
@@ -304,6 +310,7 @@ function titleToImage(photo_id,titleText) {
         adminUpdatePhotos([store.getState().images.find(image => image.id == photo_id)]);
       }
       else if (status().mode=='user')store.dispatch({type:'ADD_TITLE_IMAGE',id:photo_id,title:titleText,image:{id:response.data.data.img_uuid,url:image_base64}});
+      if(finishLoad)finishLoad();
     }
   }, (error) => {
     console.log(error.response.data);

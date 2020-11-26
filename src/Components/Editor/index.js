@@ -18,13 +18,8 @@ import { mdiArrowTopRightBottomLeftBold } from '@mdi/js';
 import placeHolderImage from '../../placeHolderImage.png';
 
 const PLACEHOLDER_SIZE = 350;
-// let PLACEHOLDER_SCALE = 0.1;
-// let EDIT_ICON_SCALE = 0.01;
 
 function Editor(props) {
-  // if(isMobile) {
-  //   PLACEHOLDER_SIZE = 150;
-  // }
 
   const status = useSelector(state => state.status);
   const screen = useSelector(state => state.screen);
@@ -56,6 +51,7 @@ function Editor(props) {
   const [isTwoFingerDragging,setIsTwoFingerDragging] = useState(false);
   const [isChanging,setIsChanging] = useState(false);
   const [isTextSetting,setIsTextSetting] = useState(false);
+  const [isTextLoading,setIsTextLoading] = useState(false);
 
   const editor = document.getElementById('editorWindow');
   if(editor) editor.addEventListener('touchmove', e => {
@@ -406,9 +402,6 @@ function Editor(props) {
       if(isMoved) {
         saveStep(objectInfo);
       }
-      else if(isDragging){
-        if(frontObject=='textObject')setIsTextSetting(!isTextSetting);
-      }
       setIsScaling(false);
       setIsScalingText(false);
       setIsDragging(false);
@@ -524,11 +517,20 @@ function Editor(props) {
     >
       <div className='textBox' style={{backgroundColor: isEditing&&frontObject=='textObject'? 'rgba(0,0,0,0.3)':'unset'}}>
   
-        <div className={isEditing&&currentObject=='textObject'?'tools enabled ':'tools'} style={{borderWidth:1.5/textInfo.scale/editorScale}}>
+        <div className={(isEditing&&currentObject=='textObject')||isTextSetting?'tools enabled ':'tools'} style={{borderWidth:1.5/textInfo.scale/editorScale}}>
+         
           <div class='dragClickArea' draggable="false" 
-            style={{width:'100%',height:'100%'}} 
+            style={{position:'absolute',width:'100%',height:'100%'}} 
             onMouseDown={isMobile?null:(e)=>handleDragStart(e.nativeEvent)}
           />
+
+          <div class={isTextSetting||isTextLoading?'editTextToggle hidden':'editTextToggle'}
+            style={{transform: `scale(${1/textInfo.scale/editorScale})`}}
+            onClick={()=>setIsTextSetting(true)}
+          >
+            編輯
+          </div>
+
           <div className="editButton topRightButton" data-type="scale" draggable="false" 
             style={{transform: `scale(${1/textInfo.scale/editorScale})`}}
             onMouseDown={isMobile?null:(e)=>handleScaleStart(e.nativeEvent)}
@@ -556,6 +558,10 @@ function Editor(props) {
             </div>
           </div>
             
+        </div>
+
+        <div className='centerChildren' style={{pointerEvents:'none'}}>
+          <div className={isTextLoading?'textLoader':'textLoader hidden'} style={{transform: `scale(${1/textInfo.scale/editorScale})`}}/>
         </div>
 
       </div>
@@ -595,7 +601,7 @@ function Editor(props) {
                   transform: `translate(${textInfo.x}px, ${textInfo.y}px) scale(${1/editorScale})`,     
                 }}
               >
-                <TitleSetting color={textColor} title={currentImage.textInfo==null?'':currentImage.textInfo.title} onChange={(color)=>setTextColor(color)} on={isTextSetting} toggle={setIsTextSetting} />
+                <TitleSetting color={textColor} title={currentImage.textInfo==null?'':currentImage.textInfo.title} onChange={(color)=>setTextColor(color)} on={isTextSetting} toggle={setIsTextSetting} setLoading={setIsTextLoading}/>
               </div>
             :null}
 
@@ -613,7 +619,15 @@ function Editor(props) {
                   }}
                   onClick={()=>setIsTextSetting(!isTextSetting)}
                 >
-                  {/* <input className='textInput' type="text" id="fname" name="fname"></input> */}
+                  <div class={isTextSetting||isTextLoading?'editTextToggle hidden':'editTextToggle'}
+                    style={{transform: `scale(${1/textInfo.scale/editorScale})`}}
+                    onClick={()=>setIsTextSetting(true)}
+                  >
+                    編輯
+                  </div>
+                  <div className='centerChildren' style={{pointerEvents:'none'}}>
+                    <div className={isTextLoading?'textLoader':'textLoader hidden'} style={{transform: `scale(${1/textInfo.scale/editorScale})`}}/>
+                  </div>
                 </div>
               :null}
 

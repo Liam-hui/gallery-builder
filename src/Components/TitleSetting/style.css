@@ -25,3 +25,9 @@
   font-size:14px;
   color:white;
 }
+
+.closeTextSetting{
+  position: absolute;
+  top:6px;
+  right:6px;
+}

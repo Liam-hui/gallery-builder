@@ -2,14 +2,6 @@ import { combineReducers } from 'redux';
 
 // import { reducer as session } from './session';
 
-const screenWidthReducer = ( state = 1, action ) => {
-  switch( action.type ) {
-    case 'SET_SCREENWIDTH':
-      return action.screenWidth;
-    default: return state;
-  }
-}
-
 const initialStep = {
   current:1,
   store:[
@@ -81,14 +73,6 @@ const imageSelectedReducer = ( state = -1, action ) => {
   }
 }
 
-const imageIdReducer = ( state = 0, action ) => {
-  switch( action.type ) {
-    case 'UPDATE_ID':
-      return action.id;
-    default: return state;
-  }
-}
-
 const iconsReducer = ( state = [], action ) => {
   switch( action.type ) {
     case 'ADD_ICON':
@@ -138,14 +122,31 @@ const statusReducer = ( state = {mode:null}, action ) => {
   }
 }
 
+const loadingReducer = ( state = false, action ) => {
+  switch( action.type ) {
+    case 'LOADING_START':
+      return true;
+    case 'LOADING_END':
+      return false;
+    default: return state;
+  }
+}
+
+const overlayReducer = ( state = null, action ) => {
+  switch( action.type ) {
+    case 'SET_OVERLAY':
+      return action.mode;
+    case 'CLOSE_OVERLAY':
+      return null;
+    default: return state;
+  }
+}
+
 const reducers = combineReducers({
   default: () => [],
 
-  screenWidth: screenWidthReducer,
-
   images: imagesReducer,
   imageSelected: imageSelectedReducer,
-  imageId: imageIdReducer,
 
   icons: iconsReducer,
   iconSelected: iconSelectedReducer,
@@ -155,6 +156,10 @@ const reducers = combineReducers({
   display: displayReducer,
 
   status: statusReducer,
+
+  loading: loadingReducer,
+
+  overlay: overlayReducer
 
 });
 

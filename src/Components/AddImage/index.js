@@ -4,6 +4,8 @@ import store from '../../store';
 import { useSelector } from "react-redux";
 import {Services} from '../../services';
 
+import {AddIconPopUp,setIconPopUpImage} from '../../Components/AddIconPopUp';
+
 function AddImage(props) {
 
   const {border} = props;
@@ -36,8 +38,15 @@ function AddImage(props) {
         reader.onload = function () {
           let image = new Image();
           image.onload = function () {
-            if(status.mode=='user') Services.userUploadIcon({base64:reader.result});
-            else if(status.mode=='admin') Services.adminUploadPhoto({base64:reader.result,width:this.width,height:this.height});
+            // if(status.mode=='user') Services.userUploadIcon({base64:reader.result});
+            if(status.mode=='user') {
+              setIconPopUpImage(reader.result);
+              store.dispatch({type:'SET_OVERLAY',mode:'uploadIcon'});
+            }
+            else if(status.mode=='admin') {
+              store.dispatch({type:'SET_OVERLAY',mode:'loading'});
+              Services.adminUploadPhoto({base64:reader.result,width:this.width,height:this.height});
+            }
           };
           image.src = reader.result;
         };
@@ -69,7 +78,7 @@ function AddImage(props) {
   return (
     <div className={"actionContainer"+className}>
       <label className='borderBox' for="add-image">上傳圖片</label>
-      <input onChange={handleFileUpload} type="file" id="add-image" name="uploadPhotoInput" accept="image/*" multiple="multiple"/>
+      <input onChange={handleFileUpload} type="file" id="add-image" name="uploadPhotoInput" accept="image/*" multiple={status.mode=='admin'?true:false}/>
       <label className='borderBox' onClick={save}>儲存</label>
       {status.mode=='user'?<label className='borderBox' onClick={save}>完成</label>:null}
     </div>
