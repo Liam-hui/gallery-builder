@@ -10,13 +10,21 @@ const screenWidthReducer = ( state = 1, action ) => {
   }
 }
 
+const initialStep = {
+  current:1,
+  store:[
+    {object:'headObject',objectInfo:null},
+    {object:'textObject',objectInfo:null}
+  ]
+}
+
 const imagesReducer = ( state = [], action ) => {
   let state_new;
   switch( action.type ) {
     case 'SET_IMAGES':
       return action.images;
     case 'ADD_IMAGE':
-      return state.concat(action.image);
+      return state.concat( {...action.image,  ...{step: Object.assign({}, initialStep)}}); 
     case 'UPDATE_STEP':
       state_new = state.slice();
       state_new.find(image => image.id == action.id).step = action.step;
@@ -27,11 +35,22 @@ const imagesReducer = ( state = [], action ) => {
       return state_new;
     case 'UPDATE_TEXTINFO':
       state_new = state.slice();
-      state_new.find(image => image.id == action.id).textInfo = action.textInfo;
+      state_new.find(image => image.id == action.id).textInfo = {...state_new.find(image => image.id == action.id).textInfo,  ...action.textInfo };
+      return state_new;
+    case 'UPDATE_COLOR':
+      state_new = state.slice();
+      state_new.find(image => image.id == action.id).textInfo.color = action.color;
+      return state_new;
+    case 'REMOVE_TEXT':
+      state_new = state.slice();
+      state_new.find(image => image.id == action.id).textInfo = null;
+      state_new.find(image => image.id == action.id).textImage = null;
+      state_new.find(image => image.id == action.id).textTitle = null;
       return state_new;
     case 'ADD_TITLE_IMAGE':
       state_new = state.slice();
-      state_new.find(image => image.id == action.id).textInfo.image = action.image;
+      state_new.find(image => image.id == action.id).textImage = action.image;
+      state_new.find(image => image.id == action.id).textTitle = action.title;
       return state_new;
     case 'DELETE_IMAGE':
       state_new = state.slice();
@@ -41,14 +60,14 @@ const imagesReducer = ( state = [], action ) => {
       state_new = state.slice();
       if(state_new.find(image => image.id == action.id).iconSelected == action.iconId) {
         state_new.find(image => image.id == action.id).iconSelected = -1;
-        state_new.find(image => image.id == action.id).iconInfo = null;
       }
       else state_new.find(image => image.id == action.id).iconSelected = action.iconId;
+      state_new.find(image => image.id == action.id).step = Object.assign({}, initialStep);
       return state_new;
     case 'UNSELECT_ICON':
       state_new = state.slice();
       state_new.find(image => image.id == action.id).iconSelected = -1;
-      state_new.find(image => image.id == action.id).iconInfo = null;
+      state_new.find(image => image.id == action.id).step = Object.assign({}, initialStep);
       return state_new;
     default: return state;
   }
@@ -65,14 +84,6 @@ const imageSelectedReducer = ( state = -1, action ) => {
 const imageIdReducer = ( state = 0, action ) => {
   switch( action.type ) {
     case 'UPDATE_ID':
-      return action.id;
-    default: return state;
-  }
-}
-
-const iconIdReducer = ( state = 0, action ) => {
-  switch( action.type ) {
-    case 'UPDATE_ICON_ID':
       return action.id;
     default: return state;
   }
@@ -138,7 +149,6 @@ const reducers = combineReducers({
 
   icons: iconsReducer,
   iconSelected: iconSelectedReducer,
-  iconId: iconIdReducer,
 
   screen: screenReducer,
 

@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://gallerybuilder.itisdemo.com/api/',
+  baseURL: 'https://gallerybuilder.itisdemo.com/api/',
   headers: { 'Content-Type': 'application/json' },
 });
 

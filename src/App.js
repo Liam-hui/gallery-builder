@@ -27,15 +27,14 @@ function App() {
     initScreen();
 
     const mode = window.mode;
+    const customer_id = window.customer_id;
     const product_id = window.product_id;
     const order_id = window.order_id;
-
-    console.log(mode,product_id,order_id);
 
     if(mode=='admin') Services.adminGetAlbumPhotos(product_id);
     else if (mode=='user') Services.userGetPhotos(order_id,product_id);
 
-    store.dispatch({type:'SET_STATUS',status:{mode:mode,product_id:product_id,order_id:order_id}});
+    store.dispatch({type:'SET_STATUS',status:{mode:mode,product_id:product_id,order_id:order_id,customer_id:customer_id}});
   }, []);
 
   //execute when resizing finish

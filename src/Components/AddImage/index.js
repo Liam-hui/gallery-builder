@@ -35,7 +35,6 @@ function AddImage(props) {
         reader.readAsDataURL(file);
         reader.onload = function () {
           let image = new Image();
-          console.log(reader.result);
           image.onload = function () {
             if(status.mode=='user') Services.userUploadIcon({base64:reader.result});
             else if(status.mode=='admin') Services.adminUploadPhoto({base64:reader.result,width:this.width,height:this.height});
@@ -64,7 +63,7 @@ function AddImage(props) {
   }
 
   let className = '';
-  if(display=='large') className += ' block';
+  if(display=='large') className += ' block'; else className += ' row'
   if(border) className += ' border';
 
   return (
