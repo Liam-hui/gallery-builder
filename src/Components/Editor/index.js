@@ -117,12 +117,8 @@ function Editor(props) {
   const updateEditorIconInfo = () => {
     let iconInfo = {};
     if (status.mode=='admin'){
-      iconInfo = currentImage.iconInfo;
-      iconInfo.width = PLACEHOLDER_SIZE;
-      iconInfo.height = PLACEHOLDER_SIZE;
-      iconInfo.scale = iconInfo.size[1]/iconInfo.width;
-      saveStep(iconInfo,'headObject',true);
-      setIconInfo(iconInfo);
+      saveStep(currentImage.iconInfo,'headObject',true);
+      setIconInfo(currentImage.iconInfo);
     }
     else if (status.mode=='user' && currentIcon!=null) {
       iconInfo = currentImage.iconInfo;
