@@ -1,16 +1,12 @@
 .sliderContainer {
   flex:1;
   display: flex;
-  align-items: center;
+  /* align-items: center; */
   overflow-x: scroll;  
   overflow-y: hidden;  
   padding-left: 20px;
   position: relative;
 }
-
-/* .sliderContainer.isAdmin {
-  justify-content: center;
-} */
 
 .sliderContainer.vertical {
   overflow-x: hidden;
@@ -24,20 +20,21 @@
 
 .sliderScrollContainer{
   display: flex;
-  flex-direction: row-reverse;
+  flex:1;
+  /* flex-direction: row-reverse; */
   overflow: visible; 
   position: relative;
+  align-items: center;
 }
 
 .sliderContainer.vertical .sliderScrollContainer{
   flex-direction: column-reverse;
 }
 
-/* @media all and (min-width: 769px) and (min-height: 769px){
-  .sliderContainer.vertical .sliderScrollContainer{
-    flex-direction: column-reverse;
-  }
-} */
+.sliderContentContainer{
+  /* background-color: red; */
+  position: relative;
+}
 
 @keyframes sliderImageSlideIn {
   0% {
@@ -57,12 +54,31 @@
   }
 }
 
-.sliderImageWrapper {
+.sliderImageWrapper.dragging {
+  transition: none; 
+  z-index: 9999;
+}
+
+.sliderImageWrapper.notDragging{
+  animation: delay-zIndex-off 0.6s linear;
+}
+
+.sliderImageInner {
   animation: sliderImageSlideIn 0.8s ease-out 0s, fadeIn 2s ease-in-out 0s;
+  display: flex;
+  justify-content: center;
+  align-content: center;
+}
+
+.sliderImageWrapper {
+  /* animation: sliderImageSlideIn 0.8s ease-out 0s, fadeIn 2s ease-in-out 0s; */
   flex-shrink: 0;
-  padding: 20px;
-  position: relative;
+  position: absolute;
+  top:0;
+  left:0;
   overflow: visible;  
+  transition: transform 0.5s ease-in-out; 
+  z-index: 1;
 }
 
 .sliderImageWrapper.pressed {
@@ -85,6 +101,7 @@
   position: relative;
   box-sizing: border-box;
   transition: transform 0.2s ease-in; 
+  background-color: white;
 }
 
 .border .sliderImage {
@@ -104,16 +121,17 @@
   transition: opacity 0.2s ease-in;
 }
 
-.isDesktop .sliderImageWrapper:hover .sliderImage::after{
+.isDesktop .notDragging .sliderImageWrapper:hover .sliderImage::after{
   opacity: 1;
 }
 
 
 .sliderImage img{
   opacity: 0.8;
+  object-fit: cover;
 }
 
-.isDesktop .sliderImageWrapper:hover .deleteButton{
+.isDesktop .notDragging .sliderImageWrapper:hover .deleteButton{
   opacity: 1;
   pointer-events: unset;
 }

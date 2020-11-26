@@ -15,7 +15,7 @@ const imagesReducer = ( state = [], action ) => {
   switch( action.type ) {
     case 'SET_IMAGES':
       return action.images;
-    case 'ADD_IMAGE':
+    case 'ADD_IMAGE_FINISH':
       return state.concat( {...action.image,  ...{step: Object.assign({}, initialStep)}}); 
     case 'UPDATE_STEP':
       state_new = state.slice();
@@ -61,6 +61,24 @@ const imagesReducer = ( state = [], action ) => {
       state_new.find(image => image.id == action.id).iconSelected = -1;
       state_new.find(image => image.id == action.id).step = Object.assign({}, initialStep);
       return state_new;
+    case 'CHANGE_ORDER':
+      state_new = state.slice();
+      let old_order = state_new.find(image => image.id == action.id).order;
+      let new_order = old_order + action.change;
+      state_new.forEach(image => {
+        if(action.change>0&&image.order<=new_order&&image.order>old_order) image.order -=1;
+        else if(action.change<0&&image.order>=new_order&&image.order<old_order) image.order +=1;
+      });
+      state_new.find(image => image.id == action.id).order = new_order;
+      return state_new;
+    default: return state;
+  }
+}
+
+const imageOrderReducer = ( state = 0, action ) => {
+  switch( action.type ) {
+    case 'ADD_IMAGE_ORDER':
+      return state+1;
     default: return state;
   }
 }
@@ -159,7 +177,9 @@ const reducers = combineReducers({
 
   loading: loadingReducer,
 
-  overlay: overlayReducer
+  overlay: overlayReducer,
+
+  imageOrder:imageOrderReducer,
 
 });
 
