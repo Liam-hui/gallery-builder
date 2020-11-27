@@ -251,7 +251,8 @@
   background-position: center center; 
   display: flex;
   justify-content: center;
-  align-items: center;  
+  align-items: center; 
+   
 }
 
 .addTextButton {
@@ -275,9 +276,11 @@
   color:white;
   text-align: center;
   font-size: 14px;
+  animation: delay-pointer-events 1s linear;
 }
 
 .editTextToggle.hidden{
+  animation:none;
   pointer-events: none;
   opacity: 0;
 }

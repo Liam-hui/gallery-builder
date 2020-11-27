@@ -28,17 +28,22 @@ function ImagesList() {
         :null
       }
 
-      <Slider canDelete={status.mode=='admin'} border={true} vertical={display=='smallLand'} images={images} selectedId={imageSelected} selectedText={'圖片編輯中'} selectItem={(id)=>store.dispatch({type:'SELECT_IMAGE',id:id})} 
+      <Slider canDelete={status.mode=='admin'} canDrag={status.mode=='admin'} border={true} vertical={display=='smallLand'} images={images} selectedId={imageSelected} selectedText={'圖片編輯中'} selectItem={(id)=>store.dispatch({type:'SELECT_IMAGE',id:id})} 
         deleteItem={(id)=>{
-          const deleteImage = () => {
+          const deleteImage = (finish) => {
             if(imageSelected==id) {
-              let index = images.findIndex(image => image.id == imageSelected);
-              if(index<images.length-1) index += 1;
-              else index -= 1;
-              if(index==-1)  store.dispatch({type:'SELECT_IMAGE',id: -1});
-              else store.dispatch({type:'SELECT_IMAGE',id:images[index].id});
+              let order = images.find(image => image.id == imageSelected).order;
+              if(order<images.length-1) order += 1;
+              else order -= 1;
+
+              if(order==-1) {
+                console.log('yes');
+                store.dispatch({type:'SELECT_IMAGE',id: -1});
+              }
+              else store.dispatch({type:'SELECT_IMAGE',id:images.find(image => image.order == order).id});
             }
-            store.dispatch({type:'DELETE_IMAGE',id:id});
+            store.dispatch({type:'DELETE_IMAGE',id:id,product_id:status.product_id});
+            if(finish) finish();
           }
 
           Services.adminDeletePhoto(id,deleteImage);

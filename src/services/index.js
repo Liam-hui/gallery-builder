@@ -9,6 +9,7 @@ export const Services = {
   adminGetAlbumPhotos,
   adminDeletePhoto,
   adminUpdatePhotos,
+  adminUpdatePhotoOrder,
   userGetPhotos,
   userUploadIcon,
   userUpdatePhotos,
@@ -27,7 +28,7 @@ function get(url,set) {
     }
     // else if(errorFunc)errorFunc();
   }, (error) => {
-    console.log(error.response.data);
+    if(error&&error.response) console.log(error.response.data);
     // if(errorFunc)errorFunc();
   });
 }
@@ -65,13 +66,13 @@ function adminGetAlbumPhotos(product_id) {
 
       let image = new Image();
       image.onload = function () {
-        store.dispatch({type:'ADD_IMAGE',image:{url:this.src,height:this.height,width:this.width,id:id,iconInfo:iconInfo,textInfo:textInfo}});  
+        store.dispatch({type:'ADD_IMAGE',image:{url:this.src,height:this.height,width:this.width,id:id,iconInfo:iconInfo,textInfo:textInfo,order:photo.sequence}});  
         if(photo.details.title!=null&&photo.details.title.title!='') titleToImage(id,photo.details.title.title);
       };
       image.src = photo.img_base64;
     }
   }, (error) => {
-    console.log(error.response.data);
+    if(error&&error.response) console.log(error.response.data);
   });
 }
 
@@ -84,6 +85,7 @@ function adminUploadPhoto(photo) {
       {
         "type":"new",
         "id":temp_id,
+        "sequence":photo.order,
         "photo_details":{
           "position":[photo.width*0.5,photo.height*0.5],
           "size":[size,size],
@@ -108,11 +110,10 @@ function adminUploadPhoto(photo) {
   })
   .then((response) => {
     if (response.data.message=='Success') {
-      store.dispatch({type:'ADD_IMAGE',image:{url:photo.base64,height:photo.height,width:photo.width,id:response.data.data[temp_id],iconInfo:iconInfo}})
-      store.dispatch({type:'CLOSE_OVERLAY'});
+      store.dispatch({type:'ADD_IMAGE',image:{url:photo.base64,height:photo.height,width:photo.width,id:response.data.data[temp_id],iconInfo:iconInfo,order:photo.order}})
     }
   }, (error) => {
-    console.log(error.response.data);
+    if(error&&error.response) console.log(error.response.data);
   });
 }
 
@@ -129,17 +130,36 @@ function adminDeletePhoto(photo_id,deleteImage) {
   api.post('album/adminAddPhoto', body,{
   })
   .then((response) => {
-    if (response.data.message=='Success') deleteImage();
+    if (response.data.message=='Success') {
+      deleteImage();
+    }
   }, (error) => {
-    console.log(error.response.data);
+    if(error&&error.response) console.log(error.response.data);
+  });
+}
+
+function adminUpdatePhotoOrder(photo_id,newOrder,product_id) {
+  let body = {
+    "product":product_id,
+    "photo_uuid":photo_id,
+    "sequence":newOrder
+  }
+  api.post('album/updateAlbumPhotoSequence', body,{
+  })
+  .then((response) => {
+    if (response.data.message=='Success') {      
+    }
+  }, (error) => {
+    if(error&&error.response) console.log(error.response.data);
   });
 }
 
 function adminUpdatePhotos(photos,after,color) {
-  photos = photos.map(photo=>{ 
+  photos = photos.sort((a,b) => a.order - b.order).map(photo=>{ 
     let photoData = {
       "type":"update",
       "id":photo.id,
+      "sequence":photo.order,
       "photo_details":{
         "position":[photo.iconInfo.x,photo.iconInfo.y],
         "size":[photo.iconInfo.height*photo.iconInfo.scale,photo.iconInfo.width*photo.iconInfo.scale],
@@ -170,7 +190,7 @@ function adminUpdatePhotos(photos,after,color) {
     console.log(response.data);
     if(after) after();
   }, (error) => {
-    console.log(error.response.data);
+    if(error&&error.response) console.log(error.response.data);
   });
 }
 
@@ -219,7 +239,7 @@ function userGetPhotos(order_id,product_id) {
       image.src = photo.img_base64;
     }
   }, (error) => {
-    console.log(error.response.data);
+    if(error&&error.response) console.log(error.response.data);
   });
 }
 
@@ -250,7 +270,7 @@ function userUploadIcon(icon) {
       store.dispatch({type:'CLOSE_OVERLAY'});
     }
   }, (error) => {
-    console.log(error.response.data);
+    if(error&&error.response) console.log(error.response.data);
     store.dispatch({type:'SET_OVERLAY',mode:'uploadFail'});
   });
 }
@@ -284,7 +304,7 @@ function userUpdatePhotos(photos) {
   .then((response) => {
     console.log(response.data);
   }, (error) => {
-    console.log(error.response.data);
+    if(error&&error.response) console.log(error.response.data);
   });
 }
 
@@ -313,7 +333,8 @@ function titleToImage(photo_id,titleText,finishLoad) {
       if(finishLoad)finishLoad();
     }
   }, (error) => {
-    console.log(error.response.data);
+    if(error&&error.response) console.log(error.response.data);
+    if(finishLoad)finishLoad();
   });
 }
 

@@ -4,7 +4,6 @@
   /* align-items: center; */
   overflow-x: scroll;  
   overflow-y: hidden;  
-  padding-left: 20px;
   position: relative;
 }
 
@@ -21,10 +20,11 @@
 .sliderScrollContainer{
   display: flex;
   flex:1;
-  /* flex-direction: row-reverse; */
+  flex-direction: row;
   overflow: visible; 
   position: relative;
   align-items: center;
+  padding-left: 20px;
 }
 
 .sliderContainer.vertical .sliderScrollContainer{
@@ -34,6 +34,7 @@
 .sliderContentContainer{
   /* background-color: red; */
   position: relative;
+  overflow: visible;
 }
 
 @keyframes sliderImageSlideIn {
@@ -52,6 +53,10 @@
   100% {
     height: var(--slider-image-height);
   }
+}
+
+.sliderContainer.deleting .sliderImageWrapper{
+  transition: none; 
 }
 
 .sliderImageWrapper.dragging {
@@ -78,7 +83,12 @@
   left:0;
   overflow: visible;  
   transition: transform 0.5s ease-in-out; 
-  z-index: 1;
+  /* z-index: 1; */
+}
+
+.sliderImageWrapper.deleted{
+  opacity: 0;
+  pointer-events: none;
 }
 
 .sliderImageWrapper.pressed {
@@ -125,15 +135,13 @@
   opacity: 1;
 }
 
+.isDesktop .sliderImageWrapper.dragging:hover .sliderImage::after{
+  opacity: 1;
+}
 
 .sliderImage img{
   opacity: 0.8;
   object-fit: cover;
-}
-
-.isDesktop .notDragging .sliderImageWrapper:hover .deleteButton{
-  opacity: 1;
-  pointer-events: unset;
 }
   
 .statusWrapper {
@@ -159,7 +167,6 @@
   opacity: 0.7;
 }
 
-
 .statusWrapperBox {
   background-color: rgba(255,255,255,0.3);
   padding:5px;
@@ -172,57 +179,6 @@
     background-color: rgba(255,255,255,0);
     color: #CCCCCC;
   }
-}
-
-
-.pressed .chooseButtonWrapper{
-  opacity: 1;
-  /* animation: transition-pointer-events 1s linear; */
-  z-index: 9999;
-}
-
-.pressed .deleteButton {
-  opacity: 1;
-  /* animation: transition-pointer-events 1s linear; */
-  z-index: 9999;
-}
-
-
-.deleteButton {
-  width:24px;
-  height:24px;
-  /* border-radius: 12px; */
-  padding:2px;
-  /* background-color:#F2F2F2; */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-  /* -webkit-box-shadow: 3px 3px 7px -4px rgba(0,0,0,0.3);
-  -moz-box-shadow: 3px 3px 7px -4px rgba(0,0,0,0.3);
-  box-shadow: 3px 3px 7px -4px rgba(0,0,0,0.3); */
-  opacity: 0;
-  transition: opacity 0.2s ease-in;
-  pointer-events: none;
-}
-
-.isMobile .deleteButton {
-  z-index: -9999;
-}
-
-.isDesktop .deleteButton {
-  position: absolute;
-  right:3px;
-  top:3px;
-}
-
-.deleteButtonClickArea {
-  position: absolute;
-  right:-5px;
-  top:-5px;
-  padding:12px;
-  -webkit-tap-highlight-color: transparent;
-  /* background-color: red; */
 }
 
 .chooseButtonWrapper {
@@ -261,3 +217,69 @@
   pointer-events: none;
 }
 
+.sliderLoader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2 ease-in;
+}
+
+.sliderLoader.hidden{
+  opacity: 0;
+}
+
+.sliderLoader.hidden {
+  opacity:0;
+}
+
+.coverText {
+  position:absolute;
+  text-align: center;
+  margin-bottom: 8px;
+  font-size: 14px;
+  width:100%;
+}
+
+.coverText.hidden {
+  opacity: 0;
+}
+
+
+.sliderButtonClickArea {
+  position: absolute;
+  z-index: 1;
+  opacity: 0;
+  pointer-events: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity 0.3s ease-in;
+}
+
+.sliderButton{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  background-color: black;
+  width:20px;
+  height:20px;
+}
+
+.isDesktop .notDragging .sliderImageWrapper:hover .sliderButtonClickArea {
+  opacity: 1;
+  pointer-events: unset;
+}
+
+.isDesktop .notDragging .sliderImageWrapper.loading:hover .sliderButtonClickArea {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.pressed .sliderButtonClickArea {
+  opacity: 1;
+  pointer-events: unset;
+}
+
+.sliderImageWrapper.dragging .sliderButtonClickArea {
+  opacity: 1;
+  pointer-events: unset;
+}

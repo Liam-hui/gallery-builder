@@ -30,6 +30,7 @@ function AddImage(props) {
       //   };
       // });
 
+      let currentLength = images.length;
 
       Array.from(files).forEach((file,index,array)  => {
 
@@ -38,14 +39,13 @@ function AddImage(props) {
         reader.onload = function () {
           let image = new Image();
           image.onload = function () {
-            // if(status.mode=='user') Services.userUploadIcon({base64:reader.result});
             if(status.mode=='user') {
               setIconPopUpImage(reader.result);
               store.dispatch({type:'SET_OVERLAY',mode:'uploadIcon'});
             }
             else if(status.mode=='admin') {
-              store.dispatch({type:'SET_OVERLAY',mode:'loading'});
-              Services.adminUploadPhoto({base64:reader.result,width:this.width,height:this.height});
+              store.dispatch({type:'SET_SLIDER_COUNT',count:currentLength+array.length});
+              Services.adminUploadPhoto({base64:reader.result,width:this.width,height:this.height,order:currentLength+index});
             }
           };
           image.src = reader.result;

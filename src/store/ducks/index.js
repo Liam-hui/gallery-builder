@@ -1,4 +1,5 @@
 import { combineReducers } from 'redux';
+import {Services} from '../../services';
 
 // import { reducer as session } from './session';
 
@@ -15,7 +16,8 @@ const imagesReducer = ( state = [], action ) => {
   switch( action.type ) {
     case 'SET_IMAGES':
       return action.images;
-    case 'ADD_IMAGE_FINISH':
+    case 'ADD_IMAGE':
+    // case 'ADD_IMAGE_FINISH':
       return state.concat( {...action.image,  ...{step: Object.assign({}, initialStep)}}); 
     case 'UPDATE_STEP':
       state_new = state.slice();
@@ -46,6 +48,17 @@ const imagesReducer = ( state = [], action ) => {
       return state_new;
     case 'DELETE_IMAGE':
       state_new = state.slice();
+      let order = state_new.find(image => image.id == action.id).order;
+      state_new.forEach(image => {
+        if(image.order>order) {
+          image.order -=1;
+          Services.adminUpdatePhotoOrder(image.id,image.order,action.product_id);
+        }
+      });
+      state_new.find(image => image.id == action.id).deleted = true;
+      return state_new;
+    case 'DELETE_IMAGE_FINISH':
+      state_new = state.slice();
       state_new = state_new.filter(image => image.id != action.id);
       return state_new;
     case 'SELECT_ICON':
@@ -66,10 +79,17 @@ const imagesReducer = ( state = [], action ) => {
       let old_order = state_new.find(image => image.id == action.id).order;
       let new_order = old_order + action.change;
       state_new.forEach(image => {
-        if(action.change>0&&image.order<=new_order&&image.order>old_order) image.order -=1;
-        else if(action.change<0&&image.order>=new_order&&image.order<old_order) image.order +=1;
+        if(action.change>0&&image.order<=new_order&&image.order>old_order) {
+          image.order -=1;
+          Services.adminUpdatePhotoOrder(image.id,image.order,action.product_id);
+        }
+        else if(action.change<0&&image.order>=new_order&&image.order<old_order) {
+          image.order +=1;
+          Services.adminUpdatePhotoOrder(image.id,image.order,action.product_id);
+        }
       });
       state_new.find(image => image.id == action.id).order = new_order;
+      Services.adminUpdatePhotoOrder(action.id,new_order,action.product_id);
       return state_new;
     default: return state;
   }
@@ -86,6 +106,7 @@ const imageOrderReducer = ( state = 0, action ) => {
 const imageSelectedReducer = ( state = -1, action ) => {
   switch( action.type ) {
     case 'SELECT_IMAGE':
+      console.log('haha',action.id);
       return action.id;
     default: return state;
   }
@@ -140,12 +161,10 @@ const statusReducer = ( state = {mode:null}, action ) => {
   }
 }
 
-const loadingReducer = ( state = false, action ) => {
+const sliderCountReducer = ( state = false, action ) => {
   switch( action.type ) {
-    case 'LOADING_START':
-      return true;
-    case 'LOADING_END':
-      return false;
+    case 'SET_SLIDER_COUNT':
+      return action.count;
     default: return state;
   }
 }
@@ -175,11 +194,9 @@ const reducers = combineReducers({
 
   status: statusReducer,
 
-  loading: loadingReducer,
-
   overlay: overlayReducer,
 
-  imageOrder:imageOrderReducer,
+  sliderCount: sliderCountReducer,
 
 });
 

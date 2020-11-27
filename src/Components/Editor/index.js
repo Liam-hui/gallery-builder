@@ -60,11 +60,11 @@ function Editor(props) {
 
   const currentImage = imageSelected==-1? null:images.find(image => image.id == imageSelected);
   const currentImageIndex = imageSelected==-1? null:images.findIndex(image => image.id == imageSelected);
-  const currentIcon = imageSelected==-1 || currentImage.iconSelected==-1? null:icons.find(icon=>icon.id==currentImage.iconSelected); 
+  const currentIcon = imageSelected==-1 || (currentImage&&currentImage.iconSelected==-1)? null:icons.find(icon=>icon.id==currentImage.iconSelected); 
 
   useEffect(() => {
     if(currentImageIndex==null&&images.length>0) {
-      store.dispatch({type:'SELECT_IMAGE',id:images[0].id});
+      if(!images[0].deleted)store.dispatch({type:'SELECT_IMAGE',id:images[0].id});
     }
   }, [images]);
  
@@ -140,6 +140,8 @@ function Editor(props) {
 
   const addNewText = () => {
     if(textInfo==null){
+      setIsTextLoading(true);
+
       let TEXT_DISPLAY_WIDTH = screen.screenWidth>768? 350:150;
       let TEXT_WIDTH = 2000;
       let TEXT_HEIGHT = 1000;
@@ -155,9 +157,13 @@ function Editor(props) {
       setTextInfo(textInfo);
       saveStep(textInfo,'textObject',true);
 
+      setCurrentObject('textObject');
+      setFrontObject('textObject');
+      setIsEditing(true);
+
       Services.adminUpdatePhotos(
         [currentImage],
-        () => setTimeout(Services.titleToImage(imageSelected,"This is {**Customer_INPUT**}'s Album"),300),
+        () => setTimeout(Services.titleToImage(imageSelected,"This is {**Customer_INPUT**}'s Album",()=>setIsTextLoading(false)),300),
         // Services.titleToImage(imageSelected,"This is {**Customer_INPUT**}'s Album"),
         '#000000'
       );
@@ -345,7 +351,7 @@ function Editor(props) {
         handleDragTwoFinger(e);
         if(e.target.dataset.type=='scale') handleScaleStart(e.nativeEvent.targetTouches[0]);
         else if(e.target.dataset.type=='scaleText') handleScaleTextStart(e.nativeEvent.targetTouches[0]);
-        else if(document.getElementById(currentObject).contains(e.target)&& e.nativeEvent.targetTouches.length==1&&touchCount==0) handleDragStart(e.nativeEvent.targetTouches[0]);
+        else if(document.getElementById(currentObject)&&document.getElementById(currentObject).contains(e.target)&& e.nativeEvent.targetTouches.length==1&&touchCount==0) handleDragStart(e.nativeEvent.targetTouches[0]);
       }
       else if(touchCount==1&&!isScaling){
         handleDragTwoFinger(e,true);
@@ -538,7 +544,7 @@ function Editor(props) {
 
           <div className="editButton bottomLeftButton" draggable="false" 
               style={{transform: `scale(${1/textInfo.scale/editorScale})`}}
-              onClick={isEditing?()=>{store.dispatch({type:'REMOVE_TEXT',id:imageSelected});setTextInfo(null)}:null}
+              onClick={isEditing?()=>{store.dispatch({type:'REMOVE_TEXT',id:imageSelected});setTextInfo(null);setIsTextSetting(false)}:null}
             >
               <div className="editButtonInner" style={{pointerEvents:'none'}}>
                 <Icon path={mdiDelete} size={1} color="white"/>
@@ -615,7 +621,7 @@ function Editor(props) {
                   }}
                   onClick={()=>setIsTextSetting(!isTextSetting)}
                 >
-                  <div class={isTextSetting||isTextLoading?'editTextToggle hidden':'editTextToggle'}
+                  <div class={isTextSetting||isTextLoading||currentObject!='textObject'?'editTextToggle hidden':'editTextToggle'}
                     style={{transform: `scale(${1/textInfo.scale/editorScale})`}}
                     onClick={()=>setIsTextSetting(true)}
                   >
