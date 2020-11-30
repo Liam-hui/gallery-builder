@@ -121,9 +121,9 @@ function Editor() {
       saveStep(currentImage.iconInfo,'headObject',true);
       setIconInfo(currentImage.iconInfo);
     }
-    else if (status.mode=='user' && currentIcon!=null) {
+    else if (status.mode=='user' && currentIcon!=null && !currentIcon.loading ) {
       iconInfo = currentImage.iconInfo;
-      iconInfo.scale *= (iconInfo.width/currentIcon.width + iconInfo.height/currentIcon.height)*0.5;
+      iconInfo.scale *= (currentImage.iconInfo.width/currentIcon.width + currentImage.iconInfo.height/currentIcon.height)*0.5;
       iconInfo.width = currentIcon.width;
       iconInfo.height = currentIcon.height;
       iconInfo.flip = false;
@@ -527,7 +527,7 @@ function Editor() {
           />
 
           <div class={isTextSetting||isTextLoading?'editTextToggle hidden':'editTextToggle'}
-            style={{transform: `scale(${1/textInfo.scale/editorScale})`}}
+            style={{transform: `scale(${1/textInfo.scale/editorScale})`,pointerEvents:isDragging||isTwoFingerDragging?'none':'unset'}}
             onClick={()=>setIsTextSetting(true)}
           >
             編輯

@@ -11,37 +11,33 @@ import { mdiCursorMove } from '@mdi/js';
 
 function Slider(props) {
 
-  const status = useSelector(state => state.status);
-  const sliderCount = useSelector(state => state.sliderCount);
-  const screen = useSelector(state => state.screen);
-
   const {mode,vertical,images,selectedId,selectedText,selectItem,deleteItem,canDelete,canDrag,border} = props;
+
+  const status = useSelector(state => state.status);
+  const screen = useSelector(state => state.screen);
 
   const [draggingId,setDraggingId] = useState(null);
   const [draggingOrder,setDraggingOrder] = useState(null);
   const [dragStart,setDragStart] = useState({});
   const [dragAmount,setDragAmount] = useState({x:0,y:0});
+
   const [highlighted,setHighlighted] = useState(-1);
-  const [loading,setLoading] = useState([]);
   const [deleting,setDeleting] = useState(false);
   const [sliderLoading,setSliderLoading] = useState(false);
 
   useEffect(() => {
-    images.forEach(image=>{
-      if(image.deleted) {
-        setLoading(loading.filter(x=>x==image.id));
-        setDeleting(true);
-        if(mode=='image')store.dispatch({type:'DELETE_IMAGE_FINISH',id:image.id})
-        else if(mode=='icon')store.dispatch({type:'DELETE_ICON_FINISH',id:image.id})
-        setTimeout(()=>setDeleting(false),1000);
-      }
-    })
-    if(sliderLoading&&images.length==sliderCount) setSliderLoading(false);
+    // images.forEach(image=>{
+    //   if(image.deleted) {
+    //     setLoading(loading.filter(x=>x==image.id));
+    //     setDeleting(true);
+    //     if(mode=='image')store.dispatch({type:'DELETE_IMAGE_FINISH',id:image.id})
+    //     else if(mode=='icon')store.dispatch({type:'DELETE_ICON_FINISH',id:image.id})
+    //     setTimeout(()=>setDeleting(false),1000);
+    //   }
+    // })
+    // if(sliderLoading&&images.length==sliderCount) setSliderLoading(false);
   }, [images]);
 
-  useEffect(() => {
-   if(sliderCount>images.length) setSliderLoading(true);
-  }, [sliderCount]);
 
   let WIDTH,HEIGHT;
   if(screen.screenWidth>768 || screen.screenHeight>768) {
@@ -100,32 +96,18 @@ function Slider(props) {
 
   const imagesList = images.map((image,index) => {
     if(mode=='icon') image.order = index;
-    let ratio = image.width / image.height;
-    let width;
-    let height;
-    if(ratio>WIDTH/HEIGHT){
-      width=WIDTH;
-      height=WIDTH/ratio;
-    }
-    else {
-      height=HEIGHT;
-      width=HEIGHT*ratio;
-    }
-    
+    let ratio = image.width/image.height;
+    let width = ratio>WIDTH/HEIGHT? WIDTH:HEIGHT*ratio;
+    let height = ratio>WIDTH/HEIGHT? WIDTH/ratio:HEIGHT;
+
     let className = '';
     if(selectedId==image.id) className += ' selected';
     if(highlighted==image.id) className += ' pressed';
     if(draggingId==image.id) className += ' dragging'; else  className += ' notDragging';
     if(border) className += ' border';
-    if(image.deleted) className += ' deleted';
-    let isLoading = false;
-    if(loading.some(x=>x==image.id) ) {
-      isLoading = true;
-      className += ' loading';
-    }
+    if(image.loading||image.deleting) className += ' loading';
 
     let drag = {x:0,y:0};
-
     if(draggingId==image.id) drag = dragAmount;
     else if(draggingId!=null) {
       let diff = image.order - draggingOrder;
@@ -157,16 +139,18 @@ function Slider(props) {
             <div className='sliderImage' style={{width:width*0.9,height:height*0.9}}>
               <img src={image.url} draggable="false" style={{width:'100%',height:'100%'}} onClick={isMobile? ()=>{if(highlighted==image.id) setHighlighted(-1); else setHighlighted(image.id)}:()=>selectItem(image.id)} 
                 onMouseLeave={(e)=>{
-                  if(e.relatedTarget.className!='deleteButtonClickArea' && e.relatedTarget.className!='chooseButtonClickArea') setHighlighted(-1);
+                  if(e.relatedTarget.className!='sliderButtonClickArea' && e.relatedTarget.className!='chooseButtonClickArea') setHighlighted(-1);
                 }
               }/>
 
+              {mode=='image'?
               <div className={image.order==0?'coverText':'coverText hidden'} style={vertical?{top:-20}:{bottom:-28}}>封面</div>
+              :null}
               
               {canDelete&&!isMobile?(
                 <div className='sliderButtonClickArea' 
                   style={{top:-10,right:-10}}
-                  onClick={()=>{if(mode=='image')setLoading(loading.concat(image.id));deleteItem(image.id)}}
+                  onClick={()=>{deleteItem(image.id)}}
                 >
                   <div className='sliderButton'><Icon path={mdiCloseThick} style={{transform:`translate(0.5px,0.5px)`}} size={0.7} color="white"/></div>
                 </div>
@@ -192,9 +176,9 @@ function Slider(props) {
             {canDelete&&isMobile?(
               <div className="sliderButtonClickArea" 
                 style={{padding:10,right:-20,top:-20}}
-                onClick={()=>{if(highlighted==image.id) {if(mode=='image')setLoading(loading.concat(image.id));deleteItem(image.id);} }}
+                onClick={()=>{if(highlighted==image.id)deleteItem(image.id); }}
               >
-                <div className='sliderButton'>
+                <div className='sliderButton' style={{pointerEvents:'none'}}>
                   <Icon path={mdiCloseThick} style={{transform:`translate(0.5px,0.5px)`,pointerEvents:'none'}} size={0.7} color="white"/>
                 </div>
               </div>
@@ -205,25 +189,26 @@ function Slider(props) {
                 style={{padding:10,left:-20,top:-20}}
                 onTouchStart={(ev)=>handleDragStart(ev.nativeEvent.targetTouches[0],image.id,image.order)}
               >
-                <div className='sliderButton'>
+                <div className='sliderButton'  style={{pointerEvents:'none'}}>
                   <Icon path={mdiCursorMove} style={{transform:`translate(0.5px,0.5px)`,pointerEvents:'none'}} size={0.7} color="white"/>
                 </div>
               </div>
             ):null}
 
-      
-            <div className="chooseButtonWrapper">
-            <div className="chooseButtonClickArea" onClick={()=>{if(highlighted==image.id)selectItem(image.id)}}>
-              <div className="chooseButton">
-                {selectedId==image.id?'取消':'選擇'}
+            {isMobile&&(mode=='icon'||selectedId!=image.id)?
+              <div className="chooseButtonWrapper">
+                <div className="chooseButtonClickArea" onClick={()=>{if(highlighted==image.id)selectItem(image.id)}}>
+                  <div className="chooseButton">
+                    {selectedId==image.id?'取消':'選擇'}
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+            :null}
           
           </>
           ):null}
 
-          <div className={image.loading||isLoading?'centerChildren':'centerChildren hidden'} style={{pointerEvents:'none',position:'absolute',backgroundColor:'rgba(255,255,255,0.6)'}}>
+          <div className={image.loading||image.deleting?'centerChildren':'centerChildren hidden'} style={{pointerEvents:'none',position:'absolute'}}>
             <div style={{transform:`scale(0.3)`}}>
               <div className='loader'/>
             </div>
@@ -246,7 +231,6 @@ function Slider(props) {
       onMouseMove={!isMobile? handleDragMove:null} 
       onTouchMove={isMobile?(ev)=>handleDragMove(ev.nativeEvent.targetTouches[0]):null} 
       onMouseUp={isMobile?null:handleEnd}
-      // onTouchStart={isMobile?handleTouchStart:null}
       onTouchEnd={isMobile?handleEnd:null} 
     >
       
@@ -254,14 +238,8 @@ function Slider(props) {
         <div className="sliderContentContainer" style={vertical?{height:images.length*HEIGHT,width:WIDTH}:{width:images.length*WIDTH,height:HEIGHT}}>
           {imagesList}
         </div>
-
-        <div className={sliderLoading?'sliderLoader':'sliderLoader hidden'} style={{width:WIDTH*0.5, height:HEIGHT}}>
-          <div style={{transform:`scale(0.3)`}}>
-            <div className='loader'/>
-          </div>
-        </div>
-
       </div>
+
     </div>
   );
 }

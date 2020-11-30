@@ -7,7 +7,7 @@ import {Services} from '../../services';
 const UploadFailPopUp = () => {
 
   return (
-    <div className='overlayBox' style={{width:340,height:200}} onClick={()=>console.log('asdf')}>
+    <div className='overlayBox' style={{width:340,height:200}} >
 
       <div style={{fontSize:27,marginBottom:30}}>上傳失敗</div>
 

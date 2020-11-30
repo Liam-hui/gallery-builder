@@ -26,6 +26,7 @@ export const AddIconPopUp = () => {
       <div style={{display:'flex'}}>
         <div className='borderBox overlayButton' 
           onClick={()=>{
+            store.dispatch({type:'ADD_ICON_START'});
             store.dispatch({type:'CLOSE_OVERLAY'});
             Services.userUploadIcon({base64:image},1);
           }}>
@@ -33,6 +34,7 @@ export const AddIconPopUp = () => {
         </div>
         <div className='borderBox overlayButton'
           onClick={()=>{
+            store.dispatch({type:'ADD_ICON_START'});
             store.dispatch({type:'CLOSE_OVERLAY'});
             Services.userUploadIcon({base64:image},0);
           }}>

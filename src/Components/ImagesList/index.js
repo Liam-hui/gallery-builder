@@ -41,11 +41,11 @@ function ImagesList() {
               }
               else store.dispatch({type:'SELECT_IMAGE',id:images.find(image => image.order == order).id});
             }
-            store.dispatch({type:'DELETE_IMAGE',id:id,product_id:status.product_id});
-            // store.dispatch({type:'DELETE_IMAGE_START',id:id,product_id:status.product_id});
+            store.dispatch({type:'DELETE_IMAGE_SUCCESS',id:id,product_id:status.product_id});
             if(finish) finish();
           }
 
+          store.dispatch({type:'DELETE_IMAGE_START',id:id,product_id:status.product_id});
           Services.adminDeletePhoto(id,deleteImage);
         }}
       />

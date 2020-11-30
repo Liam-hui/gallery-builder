@@ -21,17 +21,6 @@ function AddImage(props) {
       const files = e.target.files;
       if (!files) return;
 
-      // Array.from(files).forEach((file,index,array)  => {
-      //   console.log(file);
-      //   let image = new Image();
-      //   image.src = URL.createObjectURL(file);;
-      //   image.onload = function () {
-      //     console.log(new Date());
-      //     if(status.mode=='user') store.dispatch({type:'ADD_ICON',icon:{url:this.src,height:this.height,width:this.width,id:Math.random().toString(36).substr(2, 9)}})
-      //     else if(status.mode=='admin') store.dispatch({type:'ADD_IMAGE',image:{url:this.src,height:this.height,width:this.width,id:Math.random().toString(36).substr(2, 9)}})
-      //   };
-      // });
-
       let currentLength = images.length;
 
       Array.from(files).forEach((file,index,array)  => {
@@ -46,8 +35,7 @@ function AddImage(props) {
               store.dispatch({type:'SET_OVERLAY',mode:'uploadIcon'});
             }
             else if(status.mode=='admin') {
-              store.dispatch({type:'SET_SLIDER_COUNT',count:currentLength+array.length});
-              store.dispatch({type:'ADD_IMAGE',image:{order:currentLength+index,loading:true}});
+              store.dispatch({type:'ADD_IMAGE_START',image:{order:currentLength+index,loading:true}});
               Services.adminUploadPhoto({base64:reader.result,width:this.width,height:this.height,order:currentLength+index});
             }
           };

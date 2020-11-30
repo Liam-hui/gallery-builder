@@ -20,7 +20,6 @@ function* AddImageAction(action) {
   image.order = store.getState().images.length;
   // store.dispatch({type:'ADD_IMAGE_ORDER'});
 
-  console.log(image);
   
   yield put({
     type: 'ADD_IMAGE_FINISH',

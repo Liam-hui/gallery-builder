@@ -32,7 +32,7 @@ function IconsList(props) {
             if(imageSelected!=-1) store.dispatch({type:'SELECT_ICON',iconId:id,id:imageSelected});
           }}
           deleteItem={(id)=>{
-            if(!images.some(image=>image.iconSelected==id)) store.dispatch({type:'DELETE_ICON',id:id});
+            if(!images.some(image=>image.iconSelected==id)) store.dispatch({type:'DELETE_ICON_SUCCESS',id:id});
             // store.dispatch({type:'DELETE_ICON_START',id:id});
           }}
         />

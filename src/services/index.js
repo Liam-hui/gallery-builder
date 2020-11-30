@@ -4,7 +4,6 @@ import store from '../store';
 const status = () => store.getState().status;
 
 export const Services = {
-  get,
   adminUploadPhoto,
   adminGetAlbumPhotos,
   adminDeletePhoto,
@@ -17,21 +16,6 @@ export const Services = {
   realText,
 };
 
-//get
-function get(url,set) {
-  api.get(url, {
-  })
-  .then((response) => {
-    if(response.data.message=='Success') {
-      if(set)set(response.data.data);
-      // console.log(response.data.data.data);
-    }
-    // else if(errorFunc)errorFunc();
-  }, (error) => {
-    if(error&&error.response) console.log(error.response.data);
-    // if(errorFunc)errorFunc();
-  });
-}
 
 function adminGetAlbumPhotos(product_id) {
   api.get('album/admin/currentEditing/'+product_id,{
@@ -112,12 +96,12 @@ function adminUploadPhoto(photo) {
   })
   .then((response) => {
     if (response.data.message=='Success') {
-      store.dispatch({type:'UPDATE_IMAGE',image:{url:photo.base64,height:photo.height,width:photo.width,id:response.data.data[temp_id],iconInfo:iconInfo,order:photo.order}})
+      store.dispatch({type:'ADD_IMAGE_SUCCESS',image:{url:photo.base64,height:photo.height,width:photo.width,id:response.data.data[temp_id],iconInfo:iconInfo,order:photo.order}})
     }
   }, (error) => {
     if(error&&error.response) {
       console.log(error.response.data);
-      store.dispatch({type:'DELETE_IMAGE_ORDER',order:photo.order});
+      store.dispatch({type:'ADD_IMAGE_FAIL',order:photo.order});
     }
   });
 }
@@ -140,6 +124,7 @@ function adminDeletePhoto(photo_id,deleteImage) {
     }
   }, (error) => {
     if(error&&error.response) console.log(error.response.data);
+    store.dispatch({type:'DELETE_IMAGE_FAIL',id:photo_id});
   });
 }
 
@@ -273,7 +258,7 @@ function userUploadIcon(icon,original) {
     if (response.data.message=='Success') {
       let image = new Image();
       image.onload = function () {
-        store.dispatch({type:'ADD_ICON',icon:{url:this.src,height:this.height,width:this.width,id:response.data.data.img_uuid}});
+        store.dispatch({type:'ADD_ICON_SUCCESS',icon:{url:this.src,height:this.height,width:this.width,id:response.data.data.img_uuid}});
       };
       image.src = response.data.data.img_base64;
       store.dispatch({type:'CLOSE_OVERLAY'});
@@ -281,6 +266,7 @@ function userUploadIcon(icon,original) {
   }, (error) => {
     if(error&&error.response) console.log(error.response.data);
     store.dispatch({type:'SET_OVERLAY',mode:'uploadFail'});
+    store.dispatch({type:'ADD_ICON_FAIL'});
   });
 }
 
@@ -309,14 +295,14 @@ function userUpdatePhotos(photos,confirm) {
     "photo_details": photoDetails,
   }
 
-  console.log(JSON.stringify(body));
-  api.post('album/customerUpdatePhoto', body,{
-  })
-  .then((response) => {
-    console.log(response.data);
-  }, (error) => {
-    if(error&&error.response) console.log(error.response.data);
-  });
+  // console.log(JSON.stringify(body));
+  // api.post('album/customerUpdatePhoto', body,{
+  // })
+  // .then((response) => {
+  //   console.log(response.data);
+  // }, (error) => {
+  //   if(error&&error.response) console.log(error.response.data);
+  // });
 }
 
 function titleToImage(photo_id,titleText,finishLoad) {
@@ -333,7 +319,6 @@ function titleToImage(photo_id,titleText,finishLoad) {
   api.post('album/textToImg', body,{
   })
   .then((response) => {
-    console.log(response.data.data.img_uuid);
     if (response.data.message=='Success') {
       let image_base64 = 'data:image/jpg;base64,'+response.data.data.img_base64;
       if(status().mode=='admin'){
