@@ -19,11 +19,12 @@ import placeHolderImage from '../../placeHolderImage.png';
 
 const PLACEHOLDER_SIZE = 350;
 
-function Editor(props) {
+function Editor() {
 
   const status = useSelector(state => state.status);
   const screen = useSelector(state => state.screen);
   const display = useSelector(state => state.display);
+  const overlay = useSelector(state => state.overlay);
   const images = useSelector(state => state.images);
   const imageSelected = useSelector(state => state.imageSelected);
   const icons = useSelector(state => state.icons);
@@ -64,7 +65,7 @@ function Editor(props) {
 
   useEffect(() => {
     if(currentImageIndex==null&&images.length>0) {
-      if(!images[0].deleted)store.dispatch({type:'SELECT_IMAGE',id:images[0].id});
+      if(images.find(image => image.order == 0) && images.find(image => image.order == 0).id) store.dispatch({type:'SELECT_IMAGE',id:images.find(image => image.order == 0).id});
     }
   }, [images]);
  
@@ -334,7 +335,6 @@ function Editor(props) {
 
   const handleTouchMove = (e) => {
     if(isEditing){
-      let button = e.target.querySelector('.editButton');
       handleDragTwoFinger(e);
       if(isDragging && document.getElementById(currentObject).contains(e.target))handleDragMove(e.nativeEvent.targetTouches[0]);
       else if(isScaling && e.target.dataset.type=='scale') handleScaleMove(e.nativeEvent.targetTouches[0])
@@ -586,7 +586,7 @@ function Editor(props) {
       onTouchEnd={isMobile?handleEnd:null} 
     >
 
-      {status.mode=='admin'? 
+      {status.mode=='admin'&&overlay==null? 
         <div id="editorStartText" className={imageSelected!=-1?'fadeOut':null} >請上傳圖片</div>
       :null}
 
@@ -611,7 +611,7 @@ function Editor(props) {
 
               {/* text */}
               {status.mode=='admin'&&textInfo!=null? <>{textObject}</>:null}
-              {status.mode=='user'&&textInfo!=null? 
+              {status.mode=='user'&&currentImage.textInfo!=null?
                 <div className='textObject object' 
                   style={{
                     width:currentImage.textInfo.width,
@@ -622,13 +622,13 @@ function Editor(props) {
                   onClick={()=>setIsTextSetting(!isTextSetting)}
                 >
                   <div class={isTextSetting||isTextLoading||currentObject!='textObject'?'editTextToggle hidden':'editTextToggle'}
-                    style={{transform: `scale(${1/textInfo.scale/editorScale})`}}
+                    style={{transform: `scale(${1/editorScale})`}}
                     onClick={()=>setIsTextSetting(true)}
                   >
                     編輯
                   </div>
                   <div className='centerChildren' style={{pointerEvents:'none'}}>
-                    <div className={isTextLoading?'textLoader':'textLoader hidden'} style={{transform: `scale(${1/textInfo.scale/editorScale})`}}/>
+                    <div className={isTextLoading?'textLoader':'textLoader hidden'} style={{transform: `scale(${1/editorScale})`}}/>
                   </div>
                 </div>
               :null}
@@ -640,7 +640,7 @@ function Editor(props) {
                 <div className={currentImage.iconSelected && currentImage.iconSelected!=-1? 'headImage hidden' : 'headImage'} 
                   style={{backgroundImage:`url(${placeHolderImage})`,width:PLACEHOLDER_SIZE,height:PLACEHOLDER_SIZE,transform: `translate(${currentImage.iconInfo.x-PLACEHOLDER_SIZE*0.5}px, ${currentImage.iconInfo.y-PLACEHOLDER_SIZE*0.5}px) rotate(${currentImage.iconInfo.rot}deg) scale(${currentImage.iconInfo.size[0]/PLACEHOLDER_SIZE})`}}
                 >
-                  <p style={{fontSize:currentImage.iconInfo.width*0.1}}>請選擇頭像</p>
+                  <p style={{fontSize:currentImage.iconInfo.size[0]*0.1,transform:`scale(${1/(currentImage.iconInfo.size[0]/PLACEHOLDER_SIZE)})`}}>請選擇頭像</p>
                 </div>
               )}
 
@@ -655,7 +655,7 @@ function Editor(props) {
         )
       }
 
-      {status.mode=='user' && display!='large' ? (
+      {status.mode=='user' && display!='large' &&!status.demo? (
         <div className='editorBottom'>
           <div className={currentImageIndex>0?'pageArrow':'pageArrow disabled'} onClick={() => {if(currentImageIndex>0){store.dispatch({type:'SELECT_IMAGE',id:images[currentImageIndex-1].id});}}}>
             <Icon path={mdiArrowLeftBold} size={0.8} rotate={0} color="#DDDDDD" style={{transform:`translate(0px,0.5px)`}}/>

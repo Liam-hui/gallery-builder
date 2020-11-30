@@ -61,7 +61,7 @@
 .overlay {
   position: absolute;
   z-index: 99999999;
-  background-color: rgba(255,255,255,0.4);
+  background-color: rgba(255,255,255,0.7);
   width: 100%;
   height: 100%;
   display: flex;
@@ -76,9 +76,11 @@
 }
 
 .overlay .loading {
-  padding:10px;
-  border-radius: 20px;
+  border-radius: 14px;
+  width:80px;
+  height:80px;
   opacity: 0.7;
+  background-color: rgba(180,180,180,0.5);
 }
 
 .loader {
@@ -155,6 +157,5 @@
   pointer-events: none;
   opacity: 0;
 }
-
 
 

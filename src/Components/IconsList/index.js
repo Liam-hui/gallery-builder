@@ -27,12 +27,13 @@ function IconsList(props) {
 
       {display=='large'?<AddImage/>:null}
 
-        <Slider border={false} vertical={display!='smallPort'} images={icons} canDelete={true} selectedId={image()?image().iconSelected:-1} selectedText={'已選擇'}
+        <Slider mode='icon' border={false} vertical={display!='smallPort'} images={icons} canDelete={true} canDrag={false} selectedId={image()?image().iconSelected:-1} selectedText={'已選擇'}
           selectItem={(id)=>{
             if(imageSelected!=-1) store.dispatch({type:'SELECT_ICON',iconId:id,id:imageSelected});
           }}
           deleteItem={(id)=>{
             if(!images.some(image=>image.iconSelected==id)) store.dispatch({type:'DELETE_ICON',id:id});
+            // store.dispatch({type:'DELETE_ICON_START',id:id});
           }}
         />
 

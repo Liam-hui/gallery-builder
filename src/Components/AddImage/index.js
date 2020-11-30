@@ -14,6 +14,8 @@ function AddImage(props) {
   const display = useSelector(state => state.display);
   const images = useSelector(state => state.images);
 
+  const icons = useSelector(state => state.icons);
+
   async function handleFileUpload(e) {
     try {
       const files = e.target.files;
@@ -45,6 +47,7 @@ function AddImage(props) {
             }
             else if(status.mode=='admin') {
               store.dispatch({type:'SET_SLIDER_COUNT',count:currentLength+array.length});
+              store.dispatch({type:'ADD_IMAGE',image:{order:currentLength+index,loading:true}});
               Services.adminUploadPhoto({base64:reader.result,width:this.width,height:this.height,order:currentLength+index});
             }
           };
@@ -62,9 +65,9 @@ function AddImage(props) {
     }
   }
 
-  const save = () => {
+  const save = (confirm) => {
     if(status.mode=='user'){
-      Services.userUpdatePhotos(images);
+      Services.userUpdatePhotos(images,confirm);
     }
     else if(status.mode=='admin'){
       Services.adminUpdatePhotos(images);
@@ -79,8 +82,14 @@ function AddImage(props) {
     <div className={"actionContainer"+className}>
       <label className='borderBox' for="add-image">上傳圖片</label>
       <input onChange={handleFileUpload} type="file" id="add-image" name="uploadPhotoInput" accept="image/*" multiple={status.mode=='admin'?true:false}/>
-      <label className='borderBox' onClick={save}>儲存</label>
-      {status.mode=='user'?<label className='borderBox' onClick={save}>完成</label>:null}
+      
+      {!status.demo?
+      <>
+      <label className='borderBox' onClick={()=>save(0)}>儲存</label>
+      {status.mode=='user'?<label className='borderBox' onClick={()=>save(1)}>完成</label>:null}
+      </>
+      :null}
+
     </div>
   );
 }

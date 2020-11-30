@@ -3,13 +3,13 @@ import './animate.css';
 import React, { useState, useEffect } from 'react';
 import { useSelector } from "react-redux";
 import store from './store';
+import {Services} from './services';
 import {isMobile} from 'react-device-detect';
-import { useLocation} from "react-router-dom";
 
 import Editor from './Components/Editor';
 import ImagesList from './Components/ImagesList';
 import IconsList from './Components/IconsList';
-import {Services} from './services';
+import Loading from './Components/Loading';
 
 import UploadFailPopUp from './Components/UploadFailPopUp';
 import {AddIconPopUp} from './Components/AddIconPopUp';
@@ -24,15 +24,21 @@ function App() {
   useEffect(() => {
     initScreen();
 
-    const mode = window.mode;
+    let mode = window.mode;
+    let demo = false;
     const customer_id = window.customer_id;
     const product_id = window.product_id;
     const order_id = window.order_id;
 
     if(mode=='admin') Services.adminGetAlbumPhotos(product_id);
     else if (mode=='user') Services.userGetPhotos(order_id,product_id);
+    else if (mode=='demo') {
+      Services.userGetPhotos(order_id,product_id,true);
+      mode = 'user';
+      demo = true;
+    }
 
-    store.dispatch({type:'SET_STATUS',status:{mode:mode,product_id:product_id,order_id:order_id,customer_id:customer_id}});
+    store.dispatch({type:'SET_STATUS',status:{mode:mode,demo:demo,product_id:product_id,order_id:order_id,customer_id:customer_id}});
   }, []);
 
   //execute when resizing finish
@@ -66,7 +72,7 @@ function App() {
       {status.mode=='admin' && screen.screenWidth<768 && screen.screenHeight<768 && screen.screenHeight<screen.screenWidth?  <ImagesList/>:null}
       
       <div style={{flex:1}} className='ColumnRevContainer'>
-        {display!='smallLand'?(
+        {display!='smallLand'&&!status.demo?(
           <div className="bottomRow">
             {status.mode=='user'?
               <>
@@ -83,7 +89,7 @@ function App() {
 
         <div className={overlay=='loading'?'overlayChildren':'overlayChildren hidden'}>
           <div className='loading'>
-            <div className='loader'/>
+            <Loading scale={0.6} />
           </div>
         </div>
 

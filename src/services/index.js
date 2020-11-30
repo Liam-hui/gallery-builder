@@ -38,6 +38,7 @@ function adminGetAlbumPhotos(product_id) {
   })
   .then((response) => {
     console.log(response.data.data);
+    store.dispatch({type:'CLOSE_OVERLAY'});
     for (const [id, photo] of Object.entries(response.data.data)) {
 
       let iconInfo = {
@@ -73,6 +74,7 @@ function adminGetAlbumPhotos(product_id) {
     }
   }, (error) => {
     if(error&&error.response) console.log(error.response.data);
+    store.dispatch({type:'CLOSE_OVERLAY'});
   });
 }
 
@@ -110,10 +112,13 @@ function adminUploadPhoto(photo) {
   })
   .then((response) => {
     if (response.data.message=='Success') {
-      store.dispatch({type:'ADD_IMAGE',image:{url:photo.base64,height:photo.height,width:photo.width,id:response.data.data[temp_id],iconInfo:iconInfo,order:photo.order}})
+      store.dispatch({type:'UPDATE_IMAGE',image:{url:photo.base64,height:photo.height,width:photo.width,id:response.data.data[temp_id],iconInfo:iconInfo,order:photo.order}})
     }
   }, (error) => {
-    if(error&&error.response) console.log(error.response.data);
+    if(error&&error.response) {
+      console.log(error.response.data);
+      store.dispatch({type:'DELETE_IMAGE_ORDER',order:photo.order});
+    }
   });
 }
 
@@ -155,6 +160,7 @@ function adminUpdatePhotoOrder(photo_id,newOrder,product_id) {
 }
 
 function adminUpdatePhotos(photos,after,color) {
+  console.log(photos);
   photos = photos.sort((a,b) => a.order - b.order).map(photo=>{ 
     let photoData = {
       "type":"update",
@@ -194,11 +200,12 @@ function adminUpdatePhotos(photos,after,color) {
   });
 }
 
-function userGetPhotos(order_id,product_id) {
+function userGetPhotos(order_id,product_id,demo) {
   api.get('album/customer/customerCurrentEditing/'+order_id,{
   })
   .then((response) => {
-    console.log(response.data.data.photo_details[product_id]);
+    console.log(response.data.data);
+    store.dispatch({type:'CLOSE_OVERLAY'});
     for (const [id, photo] of Object.entries(response.data.data.photo_details[product_id])) {
 
       let textInfo = null;
@@ -228,7 +235,7 @@ function userGetPhotos(order_id,product_id) {
 
       let image = new Image();
       image.onload = function () {
-        store.dispatch({type:'ADD_IMAGE',image:{url:this.src,height:this.height,width:this.width,id:id,textInfo:textInfo,iconInfo:iconInfo}})
+        store.dispatch({type:'ADD_IMAGE',image:{url:this.src,height:this.height,width:this.width,id:id,textInfo:textInfo,iconInfo:iconInfo,order:photo.details.sequence}})
         
         if (photo.details.title!=null&&photo.details.title.title!=null) store.dispatch({type:'ADD_TITLE_IMAGE',id:id,image:{url:'data:image/jpg;base64,'+photo.details.title.title}});
         else if(photo.admin_title!=null&&photo.admin_title!='') titleToImage(id,photo.admin_title);
@@ -240,6 +247,7 @@ function userGetPhotos(order_id,product_id) {
     }
   }, (error) => {
     if(error&&error.response) console.log(error.response.data);
+    store.dispatch({type:'CLOSE_OVERLAY'});
   });
 }
 
@@ -252,11 +260,12 @@ function userSelectIcon(icon_base64,icon_id,photo_id){
   image.src = 'data:image/jpg;base64,' + icon_base64;
 }
 
-function userUploadIcon(icon) {
+function userUploadIcon(icon,original) {
   let body = {
     "customer":status().customer_id,
     "img_base64":icon.base64,
     "isTest":0,
+    "useOriginal":original,
   }
   api.post('customer/saveCustomerPhoto', body,{
   })
@@ -266,7 +275,7 @@ function userUploadIcon(icon) {
       image.onload = function () {
         store.dispatch({type:'ADD_ICON',icon:{url:this.src,height:this.height,width:this.width,id:response.data.data.img_uuid}});
       };
-      image.src = 'data:image/jpg;base64,'+response.data.data.img_base64;
+      image.src = response.data.data.img_base64;
       store.dispatch({type:'CLOSE_OVERLAY'});
     }
   }, (error) => {
@@ -275,10 +284,10 @@ function userUploadIcon(icon) {
   });
 }
 
-function userUpdatePhotos(photos) {
+function userUpdatePhotos(photos,confirm) {
   let photoDetails = {};
   photos.forEach(photo=>{
-    if(photo.iconInfo!=null) {
+    if(photo.iconInfo!=null&&photo.iconSelected!=null) {
       photoDetails[photo.id] = {
         "details": {
           "photo":photo.iconSelected,
@@ -296,9 +305,11 @@ function userUpdatePhotos(photos) {
     "product":status().product_id,
     "customer":status().customer_id,
     "order":status().order_id,
-    "confirm":0,
+    "confirm":confirm,
     "photo_details": photoDetails,
   }
+
+  console.log(JSON.stringify(body));
   api.post('album/customerUpdatePhoto', body,{
   })
   .then((response) => {
@@ -311,7 +322,7 @@ function userUpdatePhotos(photos) {
 function titleToImage(photo_id,titleText,finishLoad) {
  
   let real_text = titleText;
-  if (status().mode=='admin') real_text = realText(titleText,'Customer');
+  real_text = realText(titleText,'Customer');
 
   let body = {
     "customer":status().mode=='user'?status().customer_id:null,

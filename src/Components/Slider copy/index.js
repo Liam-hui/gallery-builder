@@ -11,37 +11,33 @@ import { mdiCursorMove } from '@mdi/js';
 
 function Slider(props) {
 
-  const status = useSelector(state => state.status);
-  const sliderCount = useSelector(state => state.sliderCount);
-  const screen = useSelector(state => state.screen);
-
   const {mode,vertical,images,selectedId,selectedText,selectItem,deleteItem,canDelete,canDrag,border} = props;
+
+  const status = useSelector(state => state.status);
+  const screen = useSelector(state => state.screen);
 
   const [draggingId,setDraggingId] = useState(null);
   const [draggingOrder,setDraggingOrder] = useState(null);
   const [dragStart,setDragStart] = useState({});
   const [dragAmount,setDragAmount] = useState({x:0,y:0});
+
   const [highlighted,setHighlighted] = useState(-1);
-  const [loading,setLoading] = useState([]);
   const [deleting,setDeleting] = useState(false);
   const [sliderLoading,setSliderLoading] = useState(false);
 
   useEffect(() => {
-    images.forEach(image=>{
-      if(image.deleted) {
-        setLoading(loading.filter(x=>x==image.id));
-        setDeleting(true);
-        if(mode=='image')store.dispatch({type:'DELETE_IMAGE_FINISH',id:image.id})
-        else if(mode=='icon')store.dispatch({type:'DELETE_ICON_FINISH',id:image.id})
-        setTimeout(()=>setDeleting(false),1000);
-      }
-    })
-    if(sliderLoading&&images.length==sliderCount) setSliderLoading(false);
+    // images.forEach(image=>{
+    //   if(image.deleted) {
+    //     setLoading(loading.filter(x=>x==image.id));
+    //     setDeleting(true);
+    //     if(mode=='image')store.dispatch({type:'DELETE_IMAGE_FINISH',id:image.id})
+    //     else if(mode=='icon')store.dispatch({type:'DELETE_ICON_FINISH',id:image.id})
+    //     setTimeout(()=>setDeleting(false),1000);
+    //   }
+    // })
+    // if(sliderLoading&&images.length==sliderCount) setSliderLoading(false);
   }, [images]);
 
-  useEffect(() => {
-   if(sliderCount>images.length) setSliderLoading(true);
-  }, [sliderCount]);
 
   let WIDTH,HEIGHT;
   if(screen.screenWidth>768 || screen.screenHeight>768) {
@@ -100,32 +96,18 @@ function Slider(props) {
 
   const imagesList = images.map((image,index) => {
     if(mode=='icon') image.order = index;
-    let ratio = image.width / image.height;
-    let width;
-    let height;
-    if(ratio>WIDTH/HEIGHT){
-      width=WIDTH;
-      height=WIDTH/ratio;
-    }
-    else {
-      height=HEIGHT;
-      width=HEIGHT*ratio;
-    }
-    
+    let ratio = image.width/image.height;
+    let width = ratio>WIDTH/HEIGHT? WIDTH:HEIGHT*ratio;
+    let height = ratio>WIDTH/HEIGHT? WIDTH/ratio:HEIGHT;
+
     let className = '';
     if(selectedId==image.id) className += ' selected';
     if(highlighted==image.id) className += ' pressed';
     if(draggingId==image.id) className += ' dragging'; else  className += ' notDragging';
     if(border) className += ' border';
-    if(image.deleted) className += ' deleted';
-    let isLoading = false;
-    if(loading.some(x=>x==image.id) ) {
-      isLoading = true;
-      className += ' loading';
-    }
+    if(image.loading||image.deleting) className += ' noPress';
 
     let drag = {x:0,y:0};
-
     if(draggingId==image.id) drag = dragAmount;
     else if(draggingId!=null) {
       let diff = image.order - draggingOrder;
@@ -166,7 +148,7 @@ function Slider(props) {
               {canDelete&&!isMobile?(
                 <div className='sliderButtonClickArea' 
                   style={{top:-10,right:-10}}
-                  onClick={()=>{if(mode=='image')setLoading(loading.concat(image.id));deleteItem(image.id)}}
+                  onClick={()=>{deleteItem(image.id)}}
                 >
                   <div className='sliderButton'><Icon path={mdiCloseThick} style={{transform:`translate(0.5px,0.5px)`}} size={0.7} color="white"/></div>
                 </div>
@@ -192,7 +174,7 @@ function Slider(props) {
             {canDelete&&isMobile?(
               <div className="sliderButtonClickArea" 
                 style={{padding:10,right:-20,top:-20}}
-                onClick={()=>{if(highlighted==image.id) {if(mode=='image')setLoading(loading.concat(image.id));deleteItem(image.id);} }}
+                onClick={()=>{if(highlighted==image.id) {deleteItem(image.id);} }}
               >
                 <div className='sliderButton'>
                   <Icon path={mdiCloseThick} style={{transform:`translate(0.5px,0.5px)`,pointerEvents:'none'}} size={0.7} color="white"/>
@@ -213,17 +195,17 @@ function Slider(props) {
 
       
             <div className="chooseButtonWrapper">
-            <div className="chooseButtonClickArea" onClick={()=>{if(highlighted==image.id)selectItem(image.id)}}>
-              <div className="chooseButton">
-                {selectedId==image.id?'取消':'選擇'}
+              <div className="chooseButtonClickArea" onClick={()=>{if(highlighted==image.id)selectItem(image.id)}}>
+                <div className="chooseButton">
+                  {selectedId==image.id?'取消':'選擇'}
+                </div>
               </div>
             </div>
-          </div>
           
           </>
           ):null}
 
-          <div className={image.loading||isLoading?'centerChildren':'centerChildren hidden'} style={{pointerEvents:'none',position:'absolute',backgroundColor:'rgba(255,255,255,0.6)'}}>
+          <div className={image.loading||image.deleting?'centerChildren':'centerChildren hidden'} style={{pointerEvents:'none',position:'absolute',backgroundColor:'rgba(255,255,255,0.6)'}}>
             <div style={{transform:`scale(0.3)`}}>
               <div className='loader'/>
             </div>

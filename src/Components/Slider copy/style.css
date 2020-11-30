@@ -86,7 +86,7 @@
   /* z-index: 1; */
 }
 
-.sliderImageWrapper.deleted{
+.sliderImageWrapper.noPress{
   opacity: 0;
   pointer-events: none;
 }
