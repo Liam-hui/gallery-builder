@@ -48,7 +48,14 @@ const imagesReducer = ( state = [], action ) => {
       state_new.find(image => image.id == action.id).textImage = null;
       state_new.find(image => image.id == action.id).textTitle = null;
       return state_new;
+    case 'TITLE_IMAGE_LOADING':
+      state_new.find(image => image.id == action.id).textLoading = true;
+      return state_new;
+    case 'TITLE_IMAGE_LOADING_END':
+      state_new.find(image => image.id == action.id).textLoading = false;
+      return state_new;
     case 'ADD_TITLE_IMAGE':
+      state_new.find(image => image.id == action.id).textLoading = false;
       state_new.find(image => image.id == action.id).textImage = action.image;
       state_new.find(image => image.id == action.id).textTitle = action.title;
       return state_new;
@@ -171,12 +178,14 @@ const statusReducer = ( state = {mode:null}, action ) => {
   }
 }
 
-const overlayReducer = ( state = 'loading', action ) => {
+const overlayReducer = ( state = {on:'on',mode:'loading'}, action ) => {
   switch( action.type ) {
     case 'SET_OVERLAY':
-      return action.mode;
-    case 'CLOSE_OVERLAY':
-      return null;
+      return {on:'on',mode:action.mode};
+    case 'HIDE_OVERLAY':
+      return {on:'hidden',mode:state.mode};
+    case 'OFF_OVERLAY':
+      return {on:'off',mode:null};
     default: return state;
   }
 }

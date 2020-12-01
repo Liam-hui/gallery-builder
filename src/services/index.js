@@ -16,11 +16,10 @@ export const Services = {
   realText,
 };
 
-
 function adminGetAlbumPhotos(product_id) {
   api.get('album/admin/currentEditing/'+product_id,{
   })
-  .then((response) => {
+  .then(async (response) => {
     console.log(response.data.data);
     store.dispatch({type:'CLOSE_OVERLAY'});
     for (const [id, photo] of Object.entries(response.data.data)) {
@@ -54,7 +53,11 @@ function adminGetAlbumPhotos(product_id) {
         store.dispatch({type:'ADD_IMAGE',image:{url:this.src,height:this.height,width:this.width,id:id,iconInfo:iconInfo,textInfo:textInfo,order:photo.sequence}});  
         if(photo.details.title!=null&&photo.details.title.title!='') titleToImage(id,photo.details.title.title);
       };
-      image.src = photo.img_base64;
+
+      let getPhotoBase64 = await api.get('album/getPhotoBase64/base/'+id);
+      let img_base64 = getPhotoBase64.data.data;
+
+      if(img_base64!=null) image.src = img_base64;
     }
   }, (error) => {
     if(error&&error.response) console.log(error.response.data);
@@ -188,7 +191,7 @@ function adminUpdatePhotos(photos,after,color) {
 function userGetPhotos(order_id,product_id,demo) {
   api.get('album/customer/customerCurrentEditing/'+order_id,{
   })
-  .then((response) => {
+  .then(async(response) => {
     console.log(response.data.data);
     store.dispatch({type:'CLOSE_OVERLAY'});
     for (const [id, photo] of Object.entries(response.data.data.photo_details[product_id])) {
@@ -219,16 +222,27 @@ function userGetPhotos(order_id,product_id,demo) {
       }
 
       let image = new Image();
-      image.onload = function () {
+      image.onload = async function () {
         store.dispatch({type:'ADD_IMAGE',image:{url:this.src,height:this.height,width:this.width,id:id,textInfo:textInfo,iconInfo:iconInfo,order:photo.details.sequence}})
         
-        if (photo.details.title!=null&&photo.details.title.title!=null) store.dispatch({type:'ADD_TITLE_IMAGE',id:id,image:{url:'data:image/jpg;base64,'+photo.details.title.title}});
+        if (photo.details.title.title!=null) {
+          let getPhotoBase64 = await api.get('album/getPhotoBase64/customer/'+photo.details.title.title);
+          let img_base64 = getPhotoBase64.data.data;
+          store.dispatch({type:'ADD_TITLE_IMAGE',id:id,image:{url:img_base64}});
+        }
         else if(photo.admin_title!=null&&photo.admin_title!='') titleToImage(id,photo.admin_title);
 
-        if(photo.details.photo!=null) userSelectIcon(photo.details.photo,photo.image_uuids.photo,id);
+        if(photo.details.photo!=null) {
+          let getPhotoBase64 = await api.get('album/getPhotoBase64/customer/'+photo.details.photo);
+          let img_base64 = getPhotoBase64.data.data;
+          userSelectIcon(img_base64,photo.details.photo,id);
+        }
     
       };
-      image.src = photo.img_base64;
+
+      let getPhotoBase64 = await api.get('album/getPhotoBase64/base/'+id);
+      let img_base64 = getPhotoBase64.data.data;
+      image.src = img_base64;
     }
   }, (error) => {
     if(error&&error.response) console.log(error.response.data);
@@ -295,17 +309,17 @@ function userUpdatePhotos(photos,confirm) {
     "photo_details": photoDetails,
   }
 
-  // console.log(JSON.stringify(body));
-  // api.post('album/customerUpdatePhoto', body,{
-  // })
-  // .then((response) => {
-  //   console.log(response.data);
-  // }, (error) => {
-  //   if(error&&error.response) console.log(error.response.data);
-  // });
+  console.log(JSON.stringify(body));
+  api.post('album/customerUpdatePhoto', body,{
+  })
+  .then((response) => {
+    console.log(response.data);
+  }, (error) => {
+    if(error&&error.response) console.log(error.response.data);
+  });
 }
 
-function titleToImage(photo_id,titleText,finishLoad) {
+function titleToImage(photo_id,titleText) {
  
   let real_text = titleText;
   real_text = realText(titleText,'Customer');
@@ -326,11 +340,10 @@ function titleToImage(photo_id,titleText,finishLoad) {
         adminUpdatePhotos([store.getState().images.find(image => image.id == photo_id)]);
       }
       else if (status().mode=='user')store.dispatch({type:'ADD_TITLE_IMAGE',id:photo_id,title:titleText,image:{id:response.data.data.img_uuid,url:image_base64}});
-      if(finishLoad)finishLoad();
     }
   }, (error) => {
     if(error&&error.response) console.log(error.response.data);
-    if(finishLoad)finishLoad();
+    store.dispatch({type:'TITLE_IMAGE_LOADING_END',id:photo_id});
   });
 }
 

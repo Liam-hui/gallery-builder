@@ -366,8 +366,8 @@ function Editor(props) {
                 height:iconInfo.height,
                 transform: `translate(${iconInfo.x-iconInfo.width*0.5}px, ${iconInfo.y-iconInfo.height*0.5}px) rotate(${iconInfo.rot}deg) scale(${iconInfo.scale})`
               }}
-              onMouseEnter={()=>setIsEditing(true)} 
-              onMouseLeave={()=>{if(!isScaling||isMobile) setIsEditing(false)}}
+              onMouseOver={()=>setIsEditing(true)} 
+              onMouseOut={()=>{if(!isScaling||isMobile) setIsEditing(false)}}
             >
               <div className='headImage' 
                 style={status.mode=='admin'?{backgroundImage:`url(${placeHolderImage})`}:{backgroundImage:'url('+currentIcon.url+')',transform: `scaleX(${iconInfo.flip?-1:1})`}}

@@ -138,7 +138,7 @@ function Slider(props) {
 
             <div className='sliderImage' style={{width:width*0.9,height:height*0.9}}>
               <img src={image.url} draggable="false" style={{width:'100%',height:'100%'}} onClick={isMobile? ()=>{if(highlighted==image.id) setHighlighted(-1); else setHighlighted(image.id)}:()=>selectItem(image.id)} 
-                onMouseLeave={(e)=>{
+                onMouseOut={(e)=>{
                   if(e.relatedTarget.className!='sliderButtonClickArea' && e.relatedTarget.className!='chooseButtonClickArea') setHighlighted(-1);
                 }
               }/>

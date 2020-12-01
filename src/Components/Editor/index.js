@@ -64,6 +64,13 @@ function Editor() {
   const currentIcon = imageSelected==-1 || (currentImage&&currentImage.iconSelected==-1)? null:icons.find(icon=>icon.id==currentImage.iconSelected); 
 
   useEffect(() => {
+    if(overlay.mode=='titleSetting') {
+      setIsTextSetting(true)
+    }
+    else if(isTextSetting) setIsTextSetting(false);
+  }, [overlay]);
+
+  useEffect(() => {
     if(currentImageIndex==null&&images.length>0) {
       if(images.find(image => image.order == 0) && images.find(image => image.order == 0).id) store.dispatch({type:'SELECT_IMAGE',id:images.find(image => image.order == 0).id});
     }
@@ -363,12 +370,13 @@ function Editor() {
   const handleDragTwoFinger = (e,start) => {
     let dragTwoFingerXY_ = dragTwoFingerXY;
 
+
     if(e.nativeEvent.targetTouches.length==1){
-      if(document.getElementById(currentObject)&&document.getElementById(currentObject).contains(e.nativeEvent.targetTouches[0].target)) dragTwoFingerXY_ = [{x:e.nativeEvent.targetTouches[0].clientX,y:e.nativeEvent.targetTouches[0].clientY},dragTwoFingerXY[1]];    
+      if(!e.nativeEvent.targetTouches[0].target.classList.contains('editTextToggle')&&document.getElementById(currentObject)&&document.getElementById(currentObject).contains(e.nativeEvent.targetTouches[0].target)) dragTwoFingerXY_ = [{x:e.nativeEvent.targetTouches[0].clientX,y:e.nativeEvent.targetTouches[0].clientY},dragTwoFingerXY[1]];    
       else dragTwoFingerXY_ = [dragTwoFingerXY[0],{x:e.nativeEvent.targetTouches[0].clientX,y:e.nativeEvent.targetTouches[0].clientY}]; 
     }
     else if(e.nativeEvent.targetTouches.length==2){
-      if(document.getElementById(currentObject)&&document.getElementById(currentObject).contains(e.nativeEvent.targetTouches[0].target)) dragTwoFingerXY_ = [{x:e.nativeEvent.targetTouches[0].clientX,y:e.nativeEvent.targetTouches[0].clientY},{x:e.nativeEvent.targetTouches[1].clientX,y:e.nativeEvent.targetTouches[1].clientY}];  
+      if(!e.nativeEvent.targetTouches[0].target.classList.contains('editTextToggle')&&document.getElementById(currentObject)&&document.getElementById(currentObject).contains(e.nativeEvent.targetTouches[0].target)) dragTwoFingerXY_ = [{x:e.nativeEvent.targetTouches[0].clientX,y:e.nativeEvent.targetTouches[0].clientY},{x:e.nativeEvent.targetTouches[1].clientX,y:e.nativeEvent.targetTouches[1].clientY}];  
     }
     
     setDragTwoFingerXY(dragTwoFingerXY_);
@@ -425,14 +433,14 @@ function Editor() {
         transform: `translate(${iconInfo.x-iconInfo.width*0.5}px, ${iconInfo.y-iconInfo.height*0.5}px) rotate(${iconInfo.rot}deg) scale(${iconInfo.scale})`,
         zIndex: frontObject=='headObject'? 99:0,
       }}
-      onMouseEnter={()=>{
+      onMouseOver={()=>{
         if(!isDragging&&!isScaling&&!isScalingText&&!isTwoFingerDragging){
           setCurrentObject('headObject');
           setFrontObject('headObject');
           setIsEditing(true);
         }
       }} 
-      onMouseLeave={()=>{
+      onMouseOut={()=>{
         if((!isDragging&&!isScaling&&!isScalingText)||isMobile) {
           setCurrentObject(null);
           setIsEditing(false);
@@ -503,15 +511,15 @@ function Editor() {
         zIndex: frontObject=='textObject'? 99:0,
         backgroundImage: currentImage==null||currentImage.textImage==null? 'none': 'url('+currentImage.textImage.url+')',
       }}
-      onMouseEnter={()=>{
+      onMouseOver={()=>{
         if(!isDragging&&!isScaling&&!isScalingText&&!isTwoFingerDragging){
           setCurrentObject('textObject');
           setFrontObject('textObject');
           setIsEditing(true);
         }
       }} 
-      onMouseLeave={()=>{
-        if((!isDragging&&!isScaling&&!isScalingText)||isMobile) {
+      onMouseOut={(e)=>{
+        if((!isDragging&&!isScaling&&!isScalingText&&!isMobile)||isMobile) {
           setCurrentObject(null);
           setIsEditing(false)
         }
@@ -519,17 +527,21 @@ function Editor() {
     >
       <div className='textBox' style={{backgroundColor: isEditing&&frontObject=='textObject'? 'rgba(0,0,0,0.3)':'unset'}}>
   
-        <div className={(isEditing&&currentObject=='textObject')||isTextSetting?'tools enabled ':'tools'} style={{borderWidth:1.5/textInfo.scale/editorScale}}>
+        <div className={(isEditing&&currentObject=='textObject')?'tools enabled ':'tools'} style={{borderWidth:1.5/textInfo.scale/editorScale}}>
          
           <div class='dragClickArea' draggable="false" 
             style={{position:'absolute',width:'100%',height:'100%'}} 
             onMouseDown={isMobile?null:(e)=>handleDragStart(e.nativeEvent)}
           />
-
-          <div class={isTextSetting||isTextLoading?'editTextToggle hidden':'editTextToggle'}
-            style={{transform: `scale(${1/textInfo.scale/editorScale})`,pointerEvents:isDragging||isTwoFingerDragging?'none':'unset'}}
-            onClick={()=>setIsTextSetting(true)}
-          >
+          
+          <div class={isTextSetting||isTextLoading||currentImage.textLoading?'editTextToggle hidden':'editTextToggle'}
+           style={{transform: `scale(${1/textInfo.scale/editorScale})`}}
+            // style={{...{transform: `scale(${1/textInfo.scale/editorScale})`},...isDragging||isTwoFingerDragging?{pointerEvents:'none'}:{}}}
+            onClick={()=>{
+              if(isMobile)store.dispatch({type:'SET_OVERLAY',mode:'titleSetting'});
+              else setIsTextSetting(true);
+            }
+          }>
             編輯
           </div>
 
@@ -563,7 +575,7 @@ function Editor() {
         </div>
 
         <div className='centerChildren' style={{pointerEvents:'none'}}>
-          <div className={isTextLoading?'textLoader':'textLoader hidden'} style={{transform: `scale(${1/textInfo.scale/editorScale})`}}/>
+          <div className={isTextLoading||currentImage.textLoading?'textLoader':'textLoader hidden'} style={{transform: `scale(${1/textInfo.scale/editorScale})`}}/>
         </div>
 
       </div>
@@ -597,13 +609,13 @@ function Editor() {
           <div id='editorImage' className={isChanging?'changing':null} style={{backgroundImage:'url('+currentImage.url+')',width:currentImage.width,height:currentImage.height,transform: `scale(${editorScale})`}}>
             
             {/* text setting */}
-            {textInfo!=null?
+            {textInfo!=null && !isMobile?
               <div className={isTextSetting?'textSetting object':'textSetting object hidden'}
                 style={{
                   transform: `translate(${textInfo.x}px, ${textInfo.y}px) scale(${1/editorScale})`,     
                 }}
               >
-                <TitleSetting color={textColor} title={currentImage.textInfo==null?'':currentImage.textInfo.title} onChange={(color)=>setTextColor(color)} on={isTextSetting} toggle={setIsTextSetting} setLoading={setIsTextLoading}/>
+                <TitleSetting on={isTextSetting} toggle={setIsTextSetting}/>
               </div>
             :null}
 
@@ -611,6 +623,7 @@ function Editor() {
 
               {/* text */}
               {status.mode=='admin'&&textInfo!=null? <>{textObject}</>:null}
+
               {status.mode=='user'&&currentImage.textInfo!=null?
                 <div className='textObject object' 
                   style={{
@@ -619,17 +632,18 @@ function Editor() {
                     transform: `translate(${currentImage.textInfo.x-currentImage.textInfo.width*0.5}px, ${currentImage.textInfo.y-currentImage.textInfo.height*0.5}px) rotate(${currentImage.textInfo.rot}deg)`,
                     backgroundImage: currentImage==null||currentImage.textInfo==null||currentImage.textImage==null? 'none': 'url('+currentImage.textImage.url+')',
                   }}
-                  onClick={()=>setIsTextSetting(!isTextSetting)}
-                >
-                  <div class={isTextSetting||isTextLoading||currentObject!='textObject'?'editTextToggle hidden':'editTextToggle'}
-                    style={{transform: `scale(${1/editorScale})`}}
-                    onClick={()=>setIsTextSetting(true)}
-                  >
-                    編輯
-                  </div>
+                  onClick={()=>{
+                    if(isMobile)store.dispatch({type:'SET_OVERLAY',mode:'titleSetting'});
+                    else setIsTextSetting(!isTextSetting)
+                    }
+                  }>
+
+                {isTextLoading||currentImage.textLoading?
                   <div className='centerChildren' style={{pointerEvents:'none'}}>
-                    <div className={isTextLoading?'textLoader':'textLoader hidden'} style={{transform: `scale(${1/editorScale})`}}/>
+                    <div className={'textLoader'} style={{transform: `scale(${1/editorScale})`}}/>
                   </div>
+                :null}
+
                 </div>
               :null}
 

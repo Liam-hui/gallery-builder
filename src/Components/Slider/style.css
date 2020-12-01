@@ -6,14 +6,6 @@
   overflow: hidden;
 }
 
-.sliderContainer.vertical {
-  justify-content: center;
-  align-items: flex-start;
-  padding-top: 30px;
-  padding-left: 0px;
-  /* border-right: 1px solid black; */
-}
-
 .sliderScrollContainer{
   display: flex;
   width:100%;
@@ -27,6 +19,8 @@
 
 .sliderContainer.vertical .sliderScrollContainer{
   flex-direction: column;
+  padding-left: 0px;
+  padding-top: 20px;
 }
 
 .sliderContentContainer{

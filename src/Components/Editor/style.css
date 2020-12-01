@@ -134,7 +134,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  pointer-events: none;
 }
+
+.tools.enabled .editButton {
+  pointer-events: unset;
+}
+
 
 .editButtonInner {
   width:30px;
@@ -266,7 +272,7 @@
 }
 
 .editTextToggle{
-  width:50px;
+  width:60px;
   height:20px;
   top:0px;
   left:0px;
@@ -276,11 +282,14 @@
   color:white;
   text-align: center;
   font-size: 14px;
-  animation: delay-pointer-events 1s linear;
+  pointer-events: none;
 }
 
-.editTextToggle.hidden{
-  animation:none;
+.tools.enabled .editTextToggle{
+  pointer-events: unset;
+}
+
+.tools.enabled .editTextToggle.hidden{
   pointer-events: none;
   opacity: 0;
 }

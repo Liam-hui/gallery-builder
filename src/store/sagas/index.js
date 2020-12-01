@@ -10,20 +10,19 @@ import store from '../';
 export default function* rootSaga() {
   
   yield all([
-    // takeLatest('ADD_IMAGE', AddImageAction),
+    takeLatest('CLOSE_OVERLAY', closeOverlayAction),
   ]);
 }
 
-function* AddImageAction(action) {
+function* closeOverlayAction(action) {
   
-  let image = action.image;
-  image.order = store.getState().images.length;
-  // store.dispatch({type:'ADD_IMAGE_ORDER'});
+  store.dispatch({type:'HIDE_OVERLAY'});
+  setTimeout(()=>store.dispatch({type:'OFF_OVERLAY'}),500)
 
   
   yield put({
-    type: 'ADD_IMAGE_FINISH',
-    image:image
+    type: 'CLOSE_OVERLAY_FINISH',
+    // image:image
   });
 }
 

@@ -10,6 +10,7 @@ import Editor from './Components/Editor';
 import ImagesList from './Components/ImagesList';
 import IconsList from './Components/IconsList';
 import Loading from './Components/Loading';
+import TitleSetting from './Components/TitleSetting';
 
 import UploadFailPopUp from './Components/UploadFailPopUp';
 import {AddIconPopUp} from './Components/AddIconPopUp';
@@ -44,8 +45,10 @@ function App() {
   //execute when resizing finish
   let resizeLoop;
   window.addEventListener("resize", ()=>{
-    clearTimeout(resizeLoop);
-    resizeLoop = setTimeout(doneResizing, 500);
+    if(!isMobile){
+      clearTimeout(resizeLoop);
+      resizeLoop = setTimeout(doneResizing, 500);
+    }
   });
   function doneResizing(){
     initScreen();
@@ -85,25 +88,41 @@ function App() {
         <Editor/>
       </div>
 
-      <div className={overlay!=null?'overlay':'overlay hidden'}>
+      {overlay.on!='off'?
+        <div className={overlay.on!='hidden'?'overlay':'overlay hidden'}>
 
-        <div className={overlay=='loading'?'overlayChildren':'overlayChildren hidden'}>
-          <div className='loading'>
-            <Loading scale={0.6} />
-          </div>
+          {overlay.mode=='loading'?
+            <div className='overlayChildren'>
+              <div className='loading'>
+                <Loading scale={0.6} />
+              </div>
+            </div>
+          :null}
+
+          {overlay.mode=='uploadIcon'?
+            <div className='overlayChildren'>
+              <AddIconPopUp/>
+            </div>
+          :null}
+
+          {overlay.mode=='uploadFail'?
+            <div className='overlayChildren'>
+              <UploadFailPopUp/>
+            </div>
+          :null}
+
+          {overlay.mode=='titleSetting'?
+            <div className='overlayChildren'>
+              <TitleSetting on={overlay.mode=='titleSetting'}/>
+            </div>
+          :null}
+
         </div>
-
-        <div className={overlay=='uploadIcon'?'overlayChildren':'overlayChildren hidden'}>
-          <AddIconPopUp/>
-        </div>
-
-        <div className={overlay=='uploadFail'?'overlayChildren':'overlayChildren hidden'}>
-          <UploadFailPopUp/>
-        </div>
-
-      </div>
+      :null}
 
     </div>
+
+    
 
   );
 }
