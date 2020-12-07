@@ -3,68 +3,75 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useSelector } from "react-redux";
 import store from '../../store';
 import {isMobile} from 'react-device-detect';
+import {Services} from '../../services';
 
 import TopBar from '../../Components/TopBar';
 import Icon from '@mdi/react'
+import TitleSetting from '../../Components/TitleSetting';
 import { mdiExclamationThick } from '@mdi/js';
 import { mdiFlipHorizontal } from '@mdi/js';
 import { mdiDelete } from '@mdi/js';
 import { mdiArrowLeftBold } from '@mdi/js';
 import { mdiRotateLeft } from '@mdi/js';
+import { mdiArrowTopRightBottomLeftBold } from '@mdi/js';
 
 import placeHolderImage from '../../placeHolderImage.png';
 
 const PLACEHOLDER_SIZE = 350;
-// let PLACEHOLDER_SCALE = 0.1;
-// let EDIT_ICON_SCALE = 0.01;
 
-function Editor(props) {
-  // if(isMobile) {
-  //   PLACEHOLDER_SIZE = 150;
-  // }
+function Editor() {
 
   const status = useSelector(state => state.status);
   const screen = useSelector(state => state.screen);
   const display = useSelector(state => state.display);
+  const overlay = useSelector(state => state.overlay);
   const images = useSelector(state => state.images);
   const imageSelected = useSelector(state => state.imageSelected);
   const icons = useSelector(state => state.icons);
 
-  const [iconInfo,setIconInfo] = useState({width:PLACEHOLDER_SIZE,height:PLACEHOLDER_SIZE,x:0,y:0,rot:0,scale:1,flip:false});
   const [editorScale,setEditorScale] = useState(1);
+  const [currentObject,setCurrentObject] = useState(null);
+  const [frontObject,setFrontObject] = useState('headObject');
+  const [iconInfo,setIconInfo] = useState({width:PLACEHOLDER_SIZE,height:PLACEHOLDER_SIZE,x:0,y:0,rot:0,scale:1,flip:false});
+  const [textInfo,setTextInfo] = useState(null);
 
   const [dragStart,setDragStart] = useState({});
   const [scaleStart,setScaleStart] = useState({});
+  const [scaleTextStart,setScaleTextStart] = useState({});
   const [dragTwoFingerXY,setDragTwoFingerXY] = useState([{},{}]);
   const [dragTwoFingerStart,setDragTwoFingerStart] = useState({scale:1,dist:-1});
   const [touchCount,setTouchCount] = useState(0);
 
   const [isEditing,setIsEditing] = useState(false);
   const [isDragging,setIsDragging] = useState(false);
+  const [isMoved,setIsMoved] = useState(false);
   const [isScaling,setIsScaling] = useState(false);
+  const [isScalingText,setIsScalingText] = useState(false);
   const [isTwoFingerDragging,setIsTwoFingerDragging] = useState(false);
   const [isChanging,setIsChanging] = useState(false);
+  const [isTextSetting,setIsTextSetting] = useState(false);
+  const [isTextLoading,setIsTextLoading] = useState(false);
 
-  const [steps,setSteps] = useState([]);
-  const [stepEnabled,setStepEnabled] = useState({back:false,redo:false});
-  const [currentStep,setCurrentStep] = useState([]);
-
-  const editor = document.getElementById('editorImage');
+  const editor = document.getElementById('editorWindow');
   if(editor) editor.addEventListener('touchmove', e => {
       e.preventDefault();
   }, { passive: false });
 
   const currentImage = imageSelected==-1? null:images.find(image => image.id == imageSelected);
   const currentImageIndex = imageSelected==-1? null:images.findIndex(image => image.id == imageSelected);
-  const currentIcon = imageSelected==-1 || currentImage.iconSelected==-1? null:icons.find(icon=>icon.id==currentImage.iconSelected); 
+  const currentIcon = imageSelected==-1 || (currentImage&&currentImage.iconSelected==-1)? null:icons.find(icon=>icon.id==currentImage.iconSelected); 
+
+  useEffect(() => {
+    if(overlay.mode=='titleSetting') {
+      setIsTextSetting(true)
+    }
+    else if(isTextSetting) setIsTextSetting(false);
+  }, [overlay]);
 
   useEffect(() => {
     if(currentImageIndex==null&&images.length>0) {
-      store.dispatch({type:'SELECT_IMAGE',id:images[0].id});
-      setSteps(images.map(image=>[]));
-      setCurrentStep(images.map(image=>-1));
+      if(images.find(image => image.order == 0) && !images.find(image => image.order == 0).loading) store.dispatch({type:'SELECT_IMAGE',id:images.find(image => image.order == 0).id});
     }
-    
   }, [images]);
  
   useEffect(() => {
@@ -73,14 +80,18 @@ function Editor(props) {
 
   useEffect(() => {
     if(imageSelected!=-1) {
+      console.log('aaa',currentImage.step);
       setIsChanging(true);
       setTimeout(()=> {
         setIsChanging(false);
-        let editorScale = updateImageSize();
-        updateEditorIconInfo(editorScale);
-        updateStepEnabled();
+        updateImageSize();
+        updateEditorIconInfo();
+        updateEditorTextInfo();
       }, 200);
+      console.log('bbb',currentImage.step);
     }
+    setIsTextSetting(false);
+
   }, [imageSelected]);
 
   useEffect(() => {
@@ -88,14 +99,8 @@ function Editor(props) {
       setIsEditing(false);
       updateEditorIconInfo();
     }
-    else {
-      let steps_ = steps.slice();
-      steps_[currentImageIndex] = [];
-      setSteps(steps_);
-
-      let currentStep_ = currentStep.slice();
-      currentStep_[currentImageIndex] = -1;
-      setCurrentStep(currentStep_);
+    else if(imageSelected!=-1){
+      // store.dispatch({type:'UPDATE_STEP',step:null,id:imageSelected});
     }
   }, [currentIcon]);
 
@@ -105,92 +110,72 @@ function Editor(props) {
     }
   }, [touchCount]);
 
-  //step
-  const updateStepEnabled = () => {
-    let back = currentImageIndex!=null && steps[currentImageIndex].length>1 && currentStep[currentImageIndex]!=0;
-    let redo = currentImageIndex!=null && currentStep[currentImageIndex]!=-1 && steps[currentImageIndex].length>currentStep[currentImageIndex]+1;
-    setStepEnabled({back:back,redo:redo});
+  let setInfo,objectInfo;
+  if(currentObject==null){
+    setInfo = () => console.log('set info null');
+  }
+  else if(currentObject=='headObject') {
+    setInfo = setIconInfo;
+    objectInfo = iconInfo;
+  }
+  else if(currentObject=='textObject') {
+    setInfo = setTextInfo;
+    objectInfo = textInfo;
   }
 
-  useEffect(() => {
-    updateStepEnabled();
-  }, [currentStep]);
-
-  const saveStep = (iconInfo) => {
-    store.dispatch({type:'UPDATE_ICONINFO',iconInfo:iconInfo,id:imageSelected});
-
-    if(currentImageIndex!=null) {
-
-      let steps_ = steps.slice(); 
-      let currentStep_ = currentStep.slice();
-
-      steps_[currentImageIndex] = steps_[currentImageIndex].slice(0,currentStep_[currentImageIndex]+1);
-      steps_[currentImageIndex].push(iconInfo);
-      currentStep_[currentImageIndex] += 1;
-
-      setSteps(steps_);
-      setCurrentStep(currentStep_);
-    }
-  }
-
-  const stepBack = () => {
-    if(stepEnabled.back){
-
-      let theStep;
-      if(currentStep[currentImageIndex] == -1) theStep = steps[currentImageIndex].length-2; 
-      else theStep = currentStep[currentImageIndex]-1;
-
-      let newIconInfo = steps[currentImageIndex][theStep];
-      store.dispatch({type:'UPDATE_ICONINFO',iconInfo:newIconInfo,id:imageSelected});
-      setIconInfo(newIconInfo);
-
-      let currentStep_ = currentStep.slice();
-      currentStep_[currentImageIndex] = theStep;
-      setCurrentStep(currentStep_);
-
-    }
-  }
-
-  const stepRedo = () => {
-    if(stepEnabled.redo){
-
-      let theStep = currentStep[currentImageIndex]+1; 
-
-      let newIconInfo = steps[currentImageIndex][theStep];
-      store.dispatch({type:'UPDATE_ICONINFO',iconInfo:newIconInfo,id:imageSelected});
-      setIconInfo(newIconInfo);
-
-      let currentStep_ = currentStep.slice();
-      currentStep_[currentImageIndex] = theStep;
-      setCurrentStep(currentStep_);
-    }
-  }
-
-  const updateEditorIconInfo = (editorScale_) => {
+  const updateEditorIconInfo = () => {
     let iconInfo = {};
-    if(!editorScale_) editorScale_ = editorScale;
     if (status.mode=='admin'){
-      if(currentImage.iconInfo == null) {
-        let PLACEHOLDER_DISPLAY_SIZE = screen.screenWidth>768? 350:150;
-        iconInfo.rot = 0;
-        iconInfo.scale = PLACEHOLDER_DISPLAY_SIZE/PLACEHOLDER_SIZE/editorScale_;
-        iconInfo.width = PLACEHOLDER_SIZE;
-        iconInfo.height = PLACEHOLDER_SIZE;
-        iconInfo.x = currentImage.width*0.5;
-        iconInfo.y = currentImage.height*0.5;
-      }
-      else iconInfo = currentImage.iconInfo;
-      setIconInfo(iconInfo);
-      if(currentStep[currentImageIndex]==-1) saveStep(iconInfo);
+      saveStep(currentImage.iconInfo,'headObject',true);
+      setIconInfo(currentImage.iconInfo);
     }
-    else if (status.mode=='user' && currentIcon!=null) {
-      if(currentImage.iconInfo == null) iconInfo = currentImage.placeHolder;
-      else iconInfo = currentImage.iconInfo;
-      iconInfo.scale *= (iconInfo.width/currentIcon.width + iconInfo.height/currentIcon.height)*0.5;
+    else if (status.mode=='user' && currentIcon!=null && !currentIcon.loading ) {
+      iconInfo = currentImage.iconInfo;
+      iconInfo.scale *= (currentImage.iconInfo.width/currentIcon.width + currentImage.iconInfo.height/currentIcon.height)*0.5;
       iconInfo.width = currentIcon.width;
       iconInfo.height = currentIcon.height;
+      iconInfo.flip = false;
+      saveStep(iconInfo,'headObject',true);
       setIconInfo(iconInfo);
-      if(currentStep[currentImageIndex]==-1) saveStep(iconInfo);
+    }   
+  }
+
+  const updateEditorTextInfo = () => {
+    if(currentImage.textInfo!=null){
+      saveStep(currentImage.textInfo,'textObject',true);
+    }
+    setTextInfo(currentImage.textInfo);
+  }
+
+  const addNewText = () => {
+    if(textInfo==null){
+      setIsTextLoading(true);
+
+      let TEXT_DISPLAY_WIDTH = screen.screenWidth>768? 350:150;
+      let TEXT_WIDTH = 2000;
+      let TEXT_HEIGHT = 400;
+      let textInfo = {
+        rot: -20,
+        scale: TEXT_DISPLAY_WIDTH/TEXT_WIDTH/editorScale,
+        width: TEXT_WIDTH,
+        height: TEXT_HEIGHT,
+      };
+      textInfo.x = TEXT_WIDTH*textInfo.scale*0.5 + 40/editorScale;
+      textInfo.y = TEXT_HEIGHT*textInfo.scale*0.5 + 70/editorScale;
+    
+      setTextInfo(textInfo);
+      saveStep(textInfo,'textObject',true);
+
+      setCurrentObject('textObject');
+      setFrontObject('textObject');
+      setIsEditing(true);
+
+      Services.adminUpdatePhotos(
+        [currentImage],
+        () => setTimeout(Services.titleToImage(imageSelected,"This is {**Customer_INPUT**}'s Album",()=>setIsTextLoading(false)),300),
+        // Services.titleToImage(imageSelected,"This is {**Customer_INPUT**}'s Album"),
+        '#000000'
+      );
     }
   }
 
@@ -214,6 +199,76 @@ function Editor(props) {
       return editorScale;
     }
   }
+  
+  //step
+  const stepEnabled = () => {
+    if(status.mode=='user'&&currentIcon==null) return {back:false,redo:false};
+    else if(currentImage!=null && currentImage.step!=null){
+      let back = currentImage!=null && currentImage.step.store.length>2 && currentImage.step.current!=1;
+      let redo = currentImage!=null && currentImage.step.store.length>currentImage.step.current+1;
+      return {back:back,redo:redo};
+    }
+    else return {back:false,redo:false}
+  }
+
+  const saveStep = (objectInfo,object,init) => {
+    if(!object) object = currentObject;
+    if(object=='headObject') store.dispatch({type:'UPDATE_ICONINFO',iconInfo:objectInfo,id:imageSelected});
+    else if(object=='textObject')store.dispatch({type:'UPDATE_TEXTINFO',textInfo:objectInfo,id:imageSelected});
+    
+    if(object!=null){
+      let the_step = {
+        hey:'sdsdf',
+        current: currentImage.step.current,
+        store: currentImage.step.store
+      };
+
+      if(the_step.store[0].objectInfo!='axs'){
+      // if(the_step.store.find(x=>x.object==object).objectInfo===null){
+        console.log('here');
+        the_step.hey = 'asdf';
+        the_step.store[0].objectInfo = 'axs';
+        // the_step.store.find(x=>x.object===object).objectInfo = 'axs';
+        // step.store.find(x=>x.object===object).objectInfo = 'axs';
+        // console.log('aa',step.store.find(x=>x.object==object));
+      // }
+      // else if(!init) {
+      //   step.store = step.store.slice(0,step.current+1);
+      //   step.store.push({object:object,objectInfo:objectInfo});
+      //   step.current += 1;
+      }
+
+      // store.dispatch({type:'UPDATE_STEP',step:step,id:imageSelected});
+    }
+  }
+
+  const stepMove = (mode) => {
+    // let step = Object.assign({}, currentImage.step); 
+    // let object,newObjectInfo;
+
+    // if(mode=='back'){
+    //   object = step.store[step.current].object;
+    //   newObjectInfo = step.store.slice(0,step.current).reverse().find(x=>x.object==object).objectInfo;
+    //   step.current -= 1;
+    // }
+    // else if(mode=='redo'){
+    //   step.current += 1;
+    //   object = step.store[step.current].object;
+    //   newObjectInfo = step.store[step.current].objectInfo;
+    // }
+
+    // if(object=='headObject') {
+    //   setIconInfo(newObjectInfo);
+    //   store.dispatch({type:'UPDATE_ICONINFO',iconInfo:newObjectInfo,id:imageSelected});
+    // }
+    // else if(object=='textObject') {
+    //   setTextInfo(newObjectInfo);
+    //   store.dispatch({type:'UPDATE_TEXTINFO',textInfo:newObjectInfo,id:imageSelected});
+    // }
+
+    // store.dispatch({type:'UPDATE_STEP',step:step,id:imageSelected});
+
+  }
 
   //move
   const handleDragStart = (ev) => {
@@ -221,30 +276,32 @@ function Editor(props) {
     setDragStart({
       x:ev.clientX,
       y:ev.clientY,
-      startX:iconInfo.x,
-      startY:iconInfo.y,
+      startX:objectInfo.x,
+      startY:objectInfo.y,
     });
   }
 
   const handleDragMove = (ev) => {
     let x = (ev.clientX - dragStart.x)/editorScale;
     let y = (ev.clientY - dragStart.y)/editorScale;
-    setIconInfo({width:iconInfo.width,height:iconInfo.height,x:dragStart.startX+x,y:dragStart.startY+y,rot:iconInfo.rot,scale:iconInfo.scale,flip:iconInfo.flip});
+    setInfo({...objectInfo,  ...{x:dragStart.startX+x,y:dragStart.startY+y} });
+   
+    setIsMoved(true);
   }
 
   const handleScaleStart = (ev) => {
     setIsScaling(true);
-    let head = document.getElementById('headMoving').getBoundingClientRect();
-    let centerX = head.left+head.width*0.5;
-    let centerY = head.top+head.height*0.5;
+    let object = document.getElementById(currentObject).getBoundingClientRect();
+    let centerX = object.left+object.width*0.5;
+    let centerY = object.top+object.height*0.5;
     let x = ev.clientX - centerX;
     let y = ev.clientY - centerY; 
     setScaleStart({
       centerX:centerX,
       centerY:centerY,
       dist:Math.hypot(x,y),
-      scale:iconInfo.scale,
-      rotation:iconInfo.rot,
+      scale:objectInfo.scale,
+      rotation:objectInfo.rot,
       angle: Math.atan2(y,  x) / Math.PI * 180,
     });
   }
@@ -253,54 +310,66 @@ function Editor(props) {
     let x = ev.clientX - scaleStart.centerX;
     let y = ev.clientY - scaleStart.centerY; 
     let scale = scaleStart.scale*Math.hypot(x,y)/scaleStart.dist;
-    // if (scale<SCALE_MIN) scale = SCALE_MIN;
+    if (objectInfo.width*scale*editorScale < 60 || objectInfo.height*scale*editorScale < 60) scale = Math.max(60/objectInfo.width/editorScale,60/objectInfo.height/editorScale);  
     let rot = scaleStart.rotation + (Math.atan2(y,  x) / Math.PI * 180 - scaleStart.angle);
-    setIconInfo({width:iconInfo.width,height:iconInfo.height,x:iconInfo.x,y:iconInfo.y,rot:rot,scale:scale,flip:iconInfo.flip});
+    setInfo({...objectInfo,  ...{rot:rot,scale:scale} });
+    setIsMoved(true);
   }
 
-  const handleFlip = () => {
-    if(isEditing){
-      let iconInfo_ = {width:iconInfo.width,height:iconInfo.height,x:iconInfo.x,y:iconInfo.y,rot:iconInfo.rot,scale:iconInfo.scale,flip:!iconInfo.flip};
-      setIconInfo(iconInfo_);
-      saveStep(iconInfo_);
-    }
+  const handleScaleTextStart = (ev) => {
+    setIsScalingText(true);
+    let object = document.getElementById(currentObject).getBoundingClientRect();
+    let centerX = object.left+object.width*0.5;
+    let centerY = object.top+object.height*0.5;
+    let x = ev.clientX - centerX;
+    let y = ev.clientY - centerY; 
+    let angle = Math.PI*0.5 - Math.atan2(x,y) - objectInfo.rot * Math.PI / 180;
+    let distX = Math.hypot(x,y) * Math.cos(angle);
+    let distY = Math.hypot(x,y) * Math.sin(angle);
+    setScaleTextStart({
+      width:objectInfo.width,
+      height:objectInfo.height,
+      centerX:centerX,
+      centerY:centerY,
+      distX: distX,
+      distY: distY,
+    });
   }
 
-  const handleEnd = () => {
-    if(isEditing){
-      // console.log('end');
-      if(isScaling) setIsScaling(false);
-      if(isDragging) setIsDragging(false);
-      if(isTwoFingerDragging) {
-        setDragTwoFingerStart({scale:1,dist:-1});
-        setDragTwoFingerXY([{},{}]);
-        setIsTwoFingerDragging(false);
-      }
-      if(isScaling||isDragging||isTwoFingerDragging) {
-        saveStep(iconInfo);
-      }
-      setTouchCount(0);
-    }
+  const handleScaleTextMove = (ev) => {
+    let x = ev.clientX - scaleTextStart.centerX;
+    let y = ev.clientY - scaleTextStart.centerY;
+
+    let angle = Math.PI*0.5 - Math.atan2(x,y) - objectInfo.rot * Math.PI / 180;
+    let distX = Math.hypot(x,y) * Math.cos(angle);
+    let distY = Math.hypot(x,y) * Math.sin(angle);
+
+    let width = Math.max(50/textInfo.scale/editorScale,scaleTextStart.width*distX/scaleTextStart.distX);
+    let height = Math.max(50/textInfo.scale/editorScale,scaleTextStart.height*distY/scaleTextStart.distY);
+
+    setInfo({...objectInfo,  ...{width:width,height:height} });
+    setIsMoved(true);
   }
 
   const handleTouchMove = (e) => {
     if(isEditing){
       handleDragTwoFinger(e);
-      if(isDragging && document.getElementById('headMoving').contains(e.target))handleDragMove(e.nativeEvent.targetTouches[0]);
-      else if(isScaling && e.target==document.getElementById('scaleButton')) handleScaleMove(e.nativeEvent.targetTouches[0])
+      if(isDragging && document.getElementById(currentObject).contains(e.target))handleDragMove(e.nativeEvent.targetTouches[0]);
+      else if(isScaling && e.target.dataset.type=='scale') handleScaleMove(e.nativeEvent.targetTouches[0])
+      else if(isScalingText && e.target.dataset.type=='scaleText') handleScaleTextMove(e.nativeEvent.targetTouches[0])
    }
   } 
 
   const handleTouchStart = (e) => {
-
     if(isEditing){
       if(e.targetTouches.length==2){
         handleDragTwoFinger(e,true);
       }
       else if(touchCount==0){
         handleDragTwoFinger(e);
-        if(e.target==document.getElementById('scaleButton')) handleScaleStart(e.nativeEvent.targetTouches[0]);
-        else if(document.getElementById('headMoving').contains(e.target)&& e.nativeEvent.targetTouches.length==1&&touchCount==0) handleDragStart(e.nativeEvent.targetTouches[0]);
+        if(e.target.dataset.type=='scale') handleScaleStart(e.nativeEvent.targetTouches[0]);
+        else if(e.target.dataset.type=='scaleText') handleScaleTextStart(e.nativeEvent.targetTouches[0]);
+        else if(document.getElementById(currentObject)&&document.getElementById(currentObject).contains(e.target)&& e.nativeEvent.targetTouches.length==1&&touchCount==0) handleDragStart(e.nativeEvent.targetTouches[0]);
       }
       else if(touchCount==1&&!isScaling){
         handleDragTwoFinger(e,true);
@@ -312,12 +381,13 @@ function Editor(props) {
   const handleDragTwoFinger = (e,start) => {
     let dragTwoFingerXY_ = dragTwoFingerXY;
 
+
     if(e.nativeEvent.targetTouches.length==1){
-      if(document.getElementById('headMoving')&&document.getElementById('headMoving').contains(e.nativeEvent.targetTouches[0].target)) dragTwoFingerXY_ = [{x:e.nativeEvent.targetTouches[0].clientX,y:e.nativeEvent.targetTouches[0].clientY},dragTwoFingerXY[1]];    
+      if(!e.nativeEvent.targetTouches[0].target.classList.contains('editTextToggle')&&document.getElementById(currentObject)&&document.getElementById(currentObject).contains(e.nativeEvent.targetTouches[0].target)) dragTwoFingerXY_ = [{x:e.nativeEvent.targetTouches[0].clientX,y:e.nativeEvent.targetTouches[0].clientY},dragTwoFingerXY[1]];    
       else dragTwoFingerXY_ = [dragTwoFingerXY[0],{x:e.nativeEvent.targetTouches[0].clientX,y:e.nativeEvent.targetTouches[0].clientY}]; 
     }
     else if(e.nativeEvent.targetTouches.length==2){
-      if(document.getElementById('headMoving')&&document.getElementById('headMoving').contains(e.nativeEvent.targetTouches[0].target)) dragTwoFingerXY_ = [{x:e.nativeEvent.targetTouches[0].clientX,y:e.nativeEvent.targetTouches[0].clientY},{x:e.nativeEvent.targetTouches[1].clientX,y:e.nativeEvent.targetTouches[1].clientY}];  
+      if(!e.nativeEvent.targetTouches[0].target.classList.contains('editTextToggle')&&document.getElementById(currentObject)&&document.getElementById(currentObject).contains(e.nativeEvent.targetTouches[0].target)) dragTwoFingerXY_ = [{x:e.nativeEvent.targetTouches[0].clientX,y:e.nativeEvent.targetTouches[0].clientY},{x:e.nativeEvent.targetTouches[1].clientX,y:e.nativeEvent.targetTouches[1].clientY}];  
     }
     
     setDragTwoFingerXY(dragTwoFingerXY_);
@@ -325,7 +395,7 @@ function Editor(props) {
     if(start && Object.keys(dragTwoFingerXY_[0]).length!=0) {
       setIsTwoFingerDragging(true);
       setDragTwoFingerStart({
-        scale:iconInfo.scale,
+        scale:objectInfo.scale,
         dist: Math.hypot(dragTwoFingerXY_[0].x-dragTwoFingerXY_[1].x,dragTwoFingerXY_[0].y-dragTwoFingerXY_[1].y)
       });
     }
@@ -335,17 +405,203 @@ function Editor(props) {
     if(isTwoFingerDragging) {
       let dist = Math.hypot(dragTwoFingerXY[0].x-dragTwoFingerXY[1].x,dragTwoFingerXY[0].y-dragTwoFingerXY[1].y);
       let scale = dragTwoFingerStart.scale*dist/dragTwoFingerStart.dist;
-      setIconInfo({width:iconInfo.width,height:iconInfo.height,x:iconInfo.x,y:iconInfo.y,rot:iconInfo.rot,scale:scale,flip:iconInfo.flip});
+      setInfo({...objectInfo,  ...{scale:scale} });
+      setIsMoved(true);
     }
   }, [dragTwoFingerXY]);
 
+  const handleFlip = () => {
+    if(isEditing){
+      let iconInfo_ = {width:objectInfo.width,height:objectInfo.height,x:objectInfo.x,y:objectInfo.y,rot:objectInfo.rot,scale:objectInfo.scale,flip:!objectInfo.flip};
+      setInfo(iconInfo_);
+      saveStep(iconInfo_);
+    }
+  }
+  
+  const handleEnd = () => {
+    if(isEditing){   
+      if(isMoved) {
+        saveStep(objectInfo);
+      }
+      setIsScaling(false);
+      setIsScalingText(false);
+      setIsDragging(false);
+      if(isTwoFingerDragging) {
+        setDragTwoFingerStart({scale:1,dist:-1});
+        setDragTwoFingerXY([{},{}]);
+        setIsTwoFingerDragging(false);
+      }
+      setIsMoved(false);
+      setTouchCount(0);
+    }
+  }
+
+  const headObject = (
+    <div id='headObject' className='object'
+      style={{
+        width:iconInfo.width,
+        height:iconInfo.height,
+        transform: `translate(${iconInfo.x-iconInfo.width*0.5}px, ${iconInfo.y-iconInfo.height*0.5}px) rotate(${iconInfo.rot}deg) scale(${iconInfo.scale})`,
+        zIndex: frontObject=='headObject'? 99:0,
+      }}
+      onMouseOver={()=>{
+        if(!status.view&&!isDragging&&!isScaling&&!isScalingText&&!isTwoFingerDragging){
+          setCurrentObject('headObject');
+          setFrontObject('headObject');
+          setIsEditing(true);
+        }
+      }} 
+      onMouseOut={()=>{
+        if((!status.view&&!isDragging&&!isScaling&&!isScalingText)||isMobile) {
+          setCurrentObject(null);
+          setIsEditing(false);
+        }
+      }}
+    >
+      <div className='headImage' 
+        style={status.mode=='admin'||currentIcon==null?{backgroundImage:`url(${placeHolderImage})`}:{backgroundImage:'url('+currentIcon.url+')',transform: `scaleX(${iconInfo.flip?-1:1})`}}
+      >
+        {status.mode=='admin'? <p style={{fontSize:iconInfo.width*0.1}}>移動此圖示</p>:null}
+      </div>
+
+      {iconInfo.scale>1&&status.mode=='user'&&!status.view?(
+        <div className="headImageWarningContainer" style={{width: 40/iconInfo.scale/editorScale,height: 40/iconInfo.scale/editorScale,padding: 10/iconInfo.scale/editorScale}}>
+          <div className='headImageWarning' style={{borderRadius: 6/iconInfo.scale/editorScale}}>
+            <Icon path={mdiExclamationThick} size={1.2/iconInfo.scale/editorScale} color="white"/>
+          </div>
+        </div>
+      ):(null)}
+
+      <div className={isEditing&&currentObject=='headObject'?'tools enabled ':'tools'} style={{borderWidth:1.5/iconInfo.scale/editorScale}}>
+        <div class='dragClickArea' draggable="false" 
+          style={{width:'100%',height:'100%'}} 
+          onMouseDown={isMobile?null:(e)=>handleDragStart(e.nativeEvent)}
+        />
+        <div className="editButton topRightButton" data-type="scale" draggable="false" 
+          style={{transform: `scale(${1/iconInfo.scale/editorScale})`}}
+          onMouseDown={isMobile?null:(e)=>handleScaleStart(e.nativeEvent)}
+        >
+          <div className="editButtonInner" style={{pointerEvents:'none'}}>
+            <Icon path={mdiRotateLeft} size={1} color="white"/>
+          </div>
+        </div>
+        {status.mode=='user'?(
+          <>
+            <div className="editButton bottomLeftButton" id='flipButton' draggable="false" 
+              style={{transform: `scale(${1/iconInfo.scale/editorScale})`}}
+              onClick={isEditing?handleFlip:null}
+            >
+              <div className="editButtonInner">
+                <Icon style={{pointerEvents:'none'}} path={mdiFlipHorizontal} size={1} color="white"/>
+              </div>
+            </div>
+
+            <div className="editButton bottomRightButton" draggable="false" 
+              style={{transform: `scale(${1/iconInfo.scale/editorScale})`}}
+              onClick={isEditing?()=>store.dispatch({type:'UNSELECT_ICON',id:imageSelected}):null}
+            >
+              <div className="editButtonInner" style={{pointerEvents:'none'}}>
+                <Icon path={mdiDelete} size={1} color="white"/>
+              </div>
+            </div>
+          </>
+        ):null}
+      </div>
+
+    </div>
+  );
+
+  const textObject = (
+    <>
+    {textInfo!=null? 
+    <div id='textObject' className='textObject object'
+      style={{
+        width:textInfo.width,
+        height:textInfo.height,
+        transform: `translate(${textInfo.x-textInfo.width*0.5}px, ${textInfo.y-textInfo.height*0.5}px) rotate(${textInfo.rot}deg) scale(${textInfo.scale})`,
+        zIndex: frontObject=='textObject'? 99:0,
+        backgroundImage: currentImage==null||currentImage.textImage==null? 'none': 'url('+currentImage.textImage.url+')',
+      }}
+      onMouseOver={()=>{
+        if(!isDragging&&!isScaling&&!isScalingText&&!isTwoFingerDragging){
+          setCurrentObject('textObject');
+          setFrontObject('textObject');
+          setIsEditing(true);
+        }
+      }} 
+      onMouseOut={(e)=>{
+        if((!isDragging&&!isScaling&&!isScalingText&&!isMobile)||isMobile) {
+          setCurrentObject(null);
+          setIsEditing(false)
+        }
+      }}
+    >
+      <div className='textBox' style={{backgroundColor: isEditing&&frontObject=='textObject'? 'rgba(0,0,0,0.3)':'unset'}}>
+  
+        <div className={(isEditing&&currentObject=='textObject')?'tools enabled ':'tools'} style={{borderWidth:1.5/textInfo.scale/editorScale}}>
+         
+          <div class='dragClickArea' draggable="false" 
+            style={{position:'absolute',width:'100%',height:'100%'}} 
+            onMouseDown={isMobile?null:(e)=>handleDragStart(e.nativeEvent)}
+          />
+          
+          <div class={isTextSetting||isTextLoading||currentImage.textLoading?'editTextToggle hidden':'editTextToggle'}
+           style={{transform: `scale(${1/textInfo.scale/editorScale})`}}
+            // style={{...{transform: `scale(${1/textInfo.scale/editorScale})`},...isDragging||isTwoFingerDragging?{pointerEvents:'none'}:{}}}
+            onClick={()=>{
+              if(isMobile)store.dispatch({type:'SET_OVERLAY',mode:'titleSetting'});
+              else setIsTextSetting(true);
+            }
+          }>
+            編輯
+          </div>
+
+          <div className="editButton topRightButton" data-type="scale" draggable="false" 
+            style={{transform: `scale(${1/textInfo.scale/editorScale})`}}
+            onMouseDown={isMobile?null:(e)=>handleScaleStart(e.nativeEvent)}
+          >
+            <div className="editButtonInner" style={{pointerEvents:'none'}} >
+              <Icon path={mdiRotateLeft} size={1} color="white"/>
+            </div>
+          </div>
+
+          <div className="editButton bottomLeftButton" draggable="false" 
+              style={{transform: `scale(${1/textInfo.scale/editorScale})`}}
+              onClick={isEditing?()=>{store.dispatch({type:'REMOVE_TEXT',id:imageSelected});setTextInfo(null);setIsTextSetting(false)}:null}
+            >
+              <div className="editButtonInner" style={{pointerEvents:'none'}}>
+                <Icon path={mdiDelete} size={1} color="white"/>
+              </div>
+            </div>
+
+          <div className="editButton bottomRightButton" data-type="scaleText" draggable="false" 
+            style={{transform: `scale(${1/textInfo.scale/editorScale})`}}
+            onMouseDown={isMobile?null:(e)=>handleScaleTextStart(e.nativeEvent)}
+          >
+            <div className="editButtonInner" style={{pointerEvents:'none'}}>
+              <Icon path={mdiArrowTopRightBottomLeftBold} size={0.7} color="white"/>
+            </div>
+          </div>
+            
+        </div>
+
+        <div className='centerChildren' style={{pointerEvents:'none'}}>
+          <div className={isTextLoading||currentImage.textLoading?'textLoader':'textLoader hidden'} style={{transform: `scale(${1/textInfo.scale/editorScale})`}}/>
+        </div>
+
+      </div>
+    </div>
+    :null}
+    </>
+  );
 
   let mouseMove = null;
-  if(isScaling) mouseMove=handleScaleMove;
-  else if(isDragging) mouseMove=handleDragMove;
+  if(isDragging) mouseMove=handleDragMove;
+  else if(isScaling) mouseMove=handleScaleMove;
+  else if(isScalingText) mouseMove=handleScaleTextMove;
 
   return (
-    <div id="editorContainer" 
+    <div id="editorContainer" style={{"--button-size":isMobile?'40px':'30px'}}
       onMouseMove={!isMobile&&mouseMove? (e)=>mouseMove(e.nativeEvent):null} 
       onTouchMove={isMobile?handleTouchMove:null} 
       onMouseUp={isMobile?null:handleEnd}
@@ -353,92 +609,93 @@ function Editor(props) {
       onTouchEnd={isMobile?handleEnd:null} 
     >
 
-      {/* <div id="editorStartText" className={imageSelected!=-1?'fadeOut':null} >上傳圖片以編輯</div> */}
-      <TopBar stepEnabled={stepEnabled} back={stepBack} redo={stepRedo}/>
-      {imageSelected!=-1?(
+      {status.mode=='admin'&&overlay==null? 
+        <div id="editorStartText" className={imageSelected!=-1?'fadeOut':null} >請上傳圖片</div>
+      :null}
+
+      {!status.view?
+        <TopBar stepEnabled={stepEnabled()} back={()=>{if(stepEnabled().back)stepMove('back')}} redo={()=>{if(stepEnabled().redo)stepMove('redo')}}/>
+      :
+        <div style={{width:'100%',height:40}}/>
+      }
+      
+      {currentImage!=null?(
         <div id='editorWindow'>
           <div id='editorImage' className={isChanging?'changing':null} style={{backgroundImage:'url('+currentImage.url+')',width:currentImage.width,height:currentImage.height,transform: `scale(${editorScale})`}}>
-
-          {status.mode=='admin' || (currentImage.iconSelected!=undefined && currentImage.iconSelected!=-1)? (
-            <div id='headMoving' className={'head'} 
-              style={{
-                width:iconInfo.width,
-                height:iconInfo.height,
-                transform: `translate(${iconInfo.x-iconInfo.width*0.5}px, ${iconInfo.y-iconInfo.height*0.5}px) rotate(${iconInfo.rot}deg) scale(${iconInfo.scale})`
-              }}
-              onMouseOver={()=>setIsEditing(true)} 
-              onMouseOut={()=>{if(!isScaling||isMobile) setIsEditing(false)}}
-            >
-              <div className='headImage' 
-                style={status.mode=='admin'?{backgroundImage:`url(${placeHolderImage})`}:{backgroundImage:'url('+currentIcon.url+')',transform: `scaleX(${iconInfo.flip?-1:1})`}}
+            
+            {/* text setting */}
+            {textInfo!=null && !isMobile?
+              <div className={isTextSetting?'textSetting object':'textSetting object hidden'}
+                style={{
+                  transform: `translate(${textInfo.x}px, ${textInfo.y}px) scale(${1/editorScale})`,     
+                }}
               >
-                {status.mode=='admin'? <p style={{fontSize:iconInfo.width*0.1}}>移動此圖示</p>:null}
+                <TitleSetting on={isTextSetting} toggle={setIsTextSetting}/>
               </div>
+            :null}
 
-              {iconInfo.scale>1&&status.mode=='user'?(
-                <div className="headImageWarningContainer" style={{width: 40/iconInfo.scale/editorScale,height: 40/iconInfo.scale/editorScale,padding: 10/iconInfo.scale/editorScale}}>
-                  <div className='headImageWarning' style={{borderRadius: 6/iconInfo.scale/editorScale}}>
-                    <Icon path={mdiExclamationThick} size={1.2/iconInfo.scale/editorScale} color="white"/>
+            <div className='editorArea'>
+
+              {/* text */}
+              {status.mode=='admin'&&textInfo!=null? <>{textObject}</>:null}
+
+              {status.mode=='user'&&currentImage.textInfo!=null?
+                <div className='textObject object' 
+                  style={{
+                    width:currentImage.textInfo.width,
+                    height:currentImage.textInfo.height,
+                    transform: `translate(${currentImage.textInfo.x-currentImage.textInfo.width*0.5}px, ${currentImage.textInfo.y-currentImage.textInfo.height*0.5}px) rotate(${currentImage.textInfo.rot}deg)`,
+                    backgroundImage: currentImage==null||currentImage.textInfo==null||currentImage.textImage==null? 'none': 'url('+currentImage.textImage.url+')',
+                  }}
+                  onClick={()=>{
+                    if(!status.view){
+                      if(isMobile)store.dispatch({type:'SET_OVERLAY',mode:'titleSetting'});
+                      else setIsTextSetting(!isTextSetting)
+                    }
+                  }}>
+
+                {isTextLoading||currentImage.textLoading?
+                  <div className='centerChildren' style={{pointerEvents:'none'}}>
+                    <div className={'textLoader'} style={{transform: `scale(${1/editorScale})`}}/>
                   </div>
+                :null}
+
                 </div>
-              ):(null)}
+              :null}
 
-              <div className={isEditing?'tools enabled ':'tools'} style={{borderWidth:3/iconInfo.scale/editorScale}}>
-                <div id='dragClickArea' draggable="false" 
-                  style={{width:'100%',height:'100%'}} 
-                  onMouseDown={isMobile?null:(e)=>handleDragStart(e.nativeEvent)}
-                />
-
-                <div className="editButton" id='scaleButton' draggable="false" 
-                  style={{transform: `scale(${1/iconInfo.scale/editorScale})`}}
-                  onMouseDown={isMobile?null:(e)=>handleScaleStart(e.nativeEvent)}
+              {/* head */}
+              {status.mode=='admin' || (currentImage.iconSelected!=undefined && currentImage.iconSelected!=-1)? (
+                <>{headObject}</>
+              ):(
+                <div className={currentImage.iconSelected && currentImage.iconSelected!=-1? 'headImage hidden' : 'headImage'} 
+                  style={{backgroundImage:`url(${placeHolderImage})`,width:PLACEHOLDER_SIZE,height:PLACEHOLDER_SIZE,transform: `translate(${currentImage.iconInfo.x-PLACEHOLDER_SIZE*0.5}px, ${currentImage.iconInfo.y-PLACEHOLDER_SIZE*0.5}px) rotate(${currentImage.iconInfo.rot}deg) scale(${currentImage.iconInfo.size[0]/PLACEHOLDER_SIZE})`}}
                 >
-                   <Icon style={{pointerEvents:'none'}} path={mdiRotateLeft} size={1} color="white"/>
+                  <p style={{fontSize:currentImage.iconInfo.size[0]*0.1,transform:`scale(${1/(currentImage.iconInfo.size[0]/PLACEHOLDER_SIZE)})`}}>請選擇頭像</p>
                 </div>
-
-                {status.mode=='user'?(
-                  <>
-                    <div className="editButton" id='flipButton' draggable="false" 
-                      style={{transform: `scale(${1/iconInfo.scale/editorScale})`}}
-                      onClick={isEditing?handleFlip:null}
-                    >
-                      <Icon path={mdiFlipHorizontal} size={1} color="white"/>
-                    </div>
-
-                    <div className="editButton" id='deleteButton' draggable="false" 
-                      style={{transform: `scale(${1/iconInfo.scale/editorScale})`}}
-                      onClick={isEditing?()=>store.dispatch({type:'UNSELECT_ICON',id:imageSelected}):null}
-                    >
-                      <Icon path={mdiDelete} size={1} color="white"/>
-                    </div>
-                  </>
-                ):null}
-
-              </div>
+              )}
 
             </div>
-          ):(
-            <div className={currentImage.iconSelected && currentImage.iconSelected!=-1? 'headImage hidden' : 'headImage'} 
-              style={{backgroundImage:`url(${placeHolderImage})`,width:currentImage.placeHolder.width,height:currentImage.placeHolder.height,transform: `translate(${currentImage.placeHolder.x-currentImage.placeHolder.width*0.5}px, ${currentImage.placeHolder.y-currentImage.placeHolder.height*0.5}px) rotate(${currentImage.placeHolder.rot}deg) scale(${currentImage.placeHolder.scale})`}}
-            >
-              <p style={{fontSize:currentImage.placeHolder.width*0.1}}>請選擇頭像</p>
-            </div>
-          )}
 
+            {/* admin add text button */}
+            {status.mode=='admin'&&textInfo==null? <div className='addTextButton' style={{transform:`scale(${1/editorScale}`}} onClick={addNewText}>新增文字</div> :null}
+        
           </div>
         </div>
-      ):(null)}
+      ):(
+        <div style={{flex:1}}/>
+        )
+      }
 
-      {status.mode=='user' && display!='large' ? (
+      {status.mode=='user'&&!status.demo&&!status.view&&display!='large'? (
         <div className='editorBottom'>
           <div className={currentImageIndex>0?'pageArrow':'pageArrow disabled'} onClick={() => {if(currentImageIndex>0){store.dispatch({type:'SELECT_IMAGE',id:images[currentImageIndex-1].id});}}}>
-            <Icon path={mdiArrowLeftBold} size={0.8} rotate={0} color="#DDDDDD" style={{transform:`translate(0.5px,0.5px)`}}/>
+            <Icon path={mdiArrowLeftBold} size={0.8} rotate={0} color="#DDDDDD" style={{transform:`translate(0px,0.5px)`}}/>
           </div>
 
-          <div className='pageNumber'>第 {currentImageIndex+1} 張</div>
+          <div className='pageNumber borderBox'>第 {currentImageIndex+1} 張</div>
           
           <div className={currentImageIndex<images.length-1?'pageArrow':'pageArrow disabled'} onClick={() => {if(currentImageIndex<images.length-1){store.dispatch({type:'SELECT_IMAGE',id:images[currentImageIndex+1].id});}}}>
-            <Icon path={mdiArrowLeftBold} size={0.8} color="#DDDDDD" style={{transform:`translate(1.5px,0.5px) rotate(180deg)`}}/>
+            <Icon path={mdiArrowLeftBold} size={0.8} color="#DDDDDD" style={{transform:`translate(0px,0.5px) rotate(180deg)`}}/>
           </div>
         </div>
       ):(null)}

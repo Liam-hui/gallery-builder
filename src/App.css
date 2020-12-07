@@ -38,6 +38,7 @@
 
 .ColumnRevContainer {
   display:flex;
+  flex:1;
   flex-direction: column-reverse;
   overflow:hidden;
   position: relative;

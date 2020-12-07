@@ -30,8 +30,6 @@ function Editor() {
   const icons = useSelector(state => state.icons);
 
   const [editorScale,setEditorScale] = useState(1);
-  const [textColor,setTextColor] = useState('#000000');
-
   const [currentObject,setCurrentObject] = useState(null);
   const [frontObject,setFrontObject] = useState('headObject');
   const [iconInfo,setIconInfo] = useState({width:PLACEHOLDER_SIZE,height:PLACEHOLDER_SIZE,x:0,y:0,rot:0,scale:1,flip:false});
@@ -59,9 +57,9 @@ function Editor() {
       e.preventDefault();
   }, { passive: false });
 
-  const currentImage = imageSelected==-1? null:images.find(image => image.id == imageSelected);
+  const currentImage = () => {return imageSelected==-1? null:images.find(image => image.id == imageSelected)};
   const currentImageIndex = imageSelected==-1? null:images.findIndex(image => image.id == imageSelected);
-  const currentIcon = imageSelected==-1 || (currentImage&&currentImage.iconSelected==-1)? null:icons.find(icon=>icon.id==currentImage.iconSelected); 
+  const currentIcon = imageSelected==-1 || (currentImage()&&currentImage().iconSelected==-1)? null:icons.find(icon=>icon.id==currentImage().iconSelected); 
 
   useEffect(() => {
     if(overlay.mode=='titleSetting') {
@@ -72,7 +70,7 @@ function Editor() {
 
   useEffect(() => {
     if(currentImageIndex==null&&images.length>0) {
-      if(images.find(image => image.order == 0) && images.find(image => image.order == 0).id) store.dispatch({type:'SELECT_IMAGE',id:images.find(image => image.order == 0).id});
+      if(images.find(image => image.order == 0) && !images.find(image => image.order == 0).loading) store.dispatch({type:'SELECT_IMAGE',id:images.find(image => image.order == 0).id});
     }
   }, [images]);
  
@@ -91,6 +89,7 @@ function Editor() {
       }, 200);
     }
     setIsTextSetting(false);
+
   }, [imageSelected]);
 
   useEffect(() => {
@@ -125,12 +124,12 @@ function Editor() {
   const updateEditorIconInfo = () => {
     let iconInfo = {};
     if (status.mode=='admin'){
-      saveStep(currentImage.iconInfo,'headObject',true);
-      setIconInfo(currentImage.iconInfo);
+      saveStep(currentImage().iconInfo,'headObject',true);
+      setIconInfo(currentImage().iconInfo);
     }
     else if (status.mode=='user' && currentIcon!=null && !currentIcon.loading ) {
-      iconInfo = currentImage.iconInfo;
-      iconInfo.scale *= (currentImage.iconInfo.width/currentIcon.width + currentImage.iconInfo.height/currentIcon.height)*0.5;
+      iconInfo = currentImage().iconInfo;
+      iconInfo.scale *= (currentImage().iconInfo.width/currentIcon.width + currentImage().iconInfo.height/currentIcon.height)*0.5;
       iconInfo.width = currentIcon.width;
       iconInfo.height = currentIcon.height;
       iconInfo.flip = false;
@@ -140,10 +139,10 @@ function Editor() {
   }
 
   const updateEditorTextInfo = () => {
-    if(currentImage.textInfo!=null){
-      saveStep(currentImage.textInfo,'textObject',true);
+    if(currentImage().textInfo!=null){
+      saveStep(currentImage().textInfo,'textObject',true);
     }
-    setTextInfo(currentImage.textInfo);
+    setTextInfo(currentImage().textInfo);
   }
 
   const addNewText = () => {
@@ -152,7 +151,7 @@ function Editor() {
 
       let TEXT_DISPLAY_WIDTH = screen.screenWidth>768? 350:150;
       let TEXT_WIDTH = 2000;
-      let TEXT_HEIGHT = 1000;
+      let TEXT_HEIGHT = 400;
       let textInfo = {
         rot: -20,
         scale: TEXT_DISPLAY_WIDTH/TEXT_WIDTH/editorScale,
@@ -170,7 +169,7 @@ function Editor() {
       setIsEditing(true);
 
       Services.adminUpdatePhotos(
-        [currentImage],
+        [currentImage()],
         () => setTimeout(Services.titleToImage(imageSelected,"This is {**Customer_INPUT**}'s Album",()=>setIsTextLoading(false)),300),
         // Services.titleToImage(imageSelected,"This is {**Customer_INPUT**}'s Album"),
         '#000000'
@@ -183,15 +182,15 @@ function Editor() {
       let editorHeight = document.getElementById('editorWindow').clientHeight;
       let editorWidth = document.getElementById('editorWindow').clientWidth;
 
-      let ratio = currentImage.width / currentImage.height;
+      let ratio = currentImage().width / currentImage().height;
       let editorRatio = editorWidth/editorHeight;
       let editorScale;
 
       if(ratio>editorRatio) {
-        editorScale = editorWidth/currentImage.width;
+        editorScale = editorWidth/currentImage().width;
       }
       else {
-        editorScale = editorHeight/currentImage.height;
+        editorScale = editorHeight/currentImage().height;
       }
 
       setEditorScale(editorScale);
@@ -202,9 +201,9 @@ function Editor() {
   //step
   const stepEnabled = () => {
     if(status.mode=='user'&&currentIcon==null) return {back:false,redo:false};
-    else if(currentImage!=null && currentImage.step!=null){
-      let back = currentImage!=null && currentImage.step.store.length>2 && currentImage.step.current!=1;
-      let redo = currentImage!=null && currentImage.step.store.length>currentImage.step.current+1;
+    else if(currentImage()!=null && currentImage().step!=null){
+      let back = currentImage()!=null && currentImage().step.store.length>2 && currentImage().step.current!=1;
+      let redo = currentImage()!=null && currentImage().step.store.length>currentImage().step.current+1;
       return {back:back,redo:redo};
     }
     else return {back:false,redo:false}
@@ -216,10 +215,14 @@ function Editor() {
     else if(object=='textObject')store.dispatch({type:'UPDATE_TEXTINFO',textInfo:objectInfo,id:imageSelected});
     
     if(object!=null){
-      let step = currentImage.step; 
+      let step = {
+        hey:'sdsdf',
+        current: currentImage().step.current,
+        store: currentImage().step.store.slice()
+      };
 
-      if(step.store.find(x=>x.object==object).objectInfo==null){
-        step.store.find(x=>x.object==object).objectInfo = objectInfo;
+      if(step.store.find(x=>x.object==object).objectInfo===null){
+        step.store.find(x=>x.object===object).objectInfo = objectInfo;
       }
       else if(!init) {
         step.store = step.store.slice(0,step.current+1);
@@ -232,7 +235,7 @@ function Editor() {
   }
 
   const stepMove = (mode) => {
-    let step = currentImage.step; 
+    let step = Object.assign({}, currentImage().step); 
     let object,newObjectInfo;
 
     if(mode=='back'){
@@ -256,7 +259,6 @@ function Editor() {
     }
 
     store.dispatch({type:'UPDATE_STEP',step:step,id:imageSelected});
-
   }
 
   //move
@@ -434,14 +436,14 @@ function Editor() {
         zIndex: frontObject=='headObject'? 99:0,
       }}
       onMouseOver={()=>{
-        if(!isDragging&&!isScaling&&!isScalingText&&!isTwoFingerDragging){
+        if(!status.view&&!isDragging&&!isScaling&&!isScalingText&&!isTwoFingerDragging){
           setCurrentObject('headObject');
           setFrontObject('headObject');
           setIsEditing(true);
         }
       }} 
       onMouseOut={()=>{
-        if((!isDragging&&!isScaling&&!isScalingText)||isMobile) {
+        if((!status.view&&!isDragging&&!isScaling&&!isScalingText)||isMobile) {
           setCurrentObject(null);
           setIsEditing(false);
         }
@@ -453,7 +455,7 @@ function Editor() {
         {status.mode=='admin'? <p style={{fontSize:iconInfo.width*0.1}}>移動此圖示</p>:null}
       </div>
 
-      {iconInfo.scale>1&&status.mode=='user'?(
+      {iconInfo.scale>1&&status.mode=='user'&&!status.view?(
         <div className="headImageWarningContainer" style={{width: 40/iconInfo.scale/editorScale,height: 40/iconInfo.scale/editorScale,padding: 10/iconInfo.scale/editorScale}}>
           <div className='headImageWarning' style={{borderRadius: 6/iconInfo.scale/editorScale}}>
             <Icon path={mdiExclamationThick} size={1.2/iconInfo.scale/editorScale} color="white"/>
@@ -509,7 +511,7 @@ function Editor() {
         height:textInfo.height,
         transform: `translate(${textInfo.x-textInfo.width*0.5}px, ${textInfo.y-textInfo.height*0.5}px) rotate(${textInfo.rot}deg) scale(${textInfo.scale})`,
         zIndex: frontObject=='textObject'? 99:0,
-        backgroundImage: currentImage==null||currentImage.textImage==null? 'none': 'url('+currentImage.textImage.url+')',
+        backgroundImage: currentImage()==null||currentImage().textImage==null? 'none': 'url('+currentImage().textImage.url+')',
       }}
       onMouseOver={()=>{
         if(!isDragging&&!isScaling&&!isScalingText&&!isTwoFingerDragging){
@@ -534,7 +536,7 @@ function Editor() {
             onMouseDown={isMobile?null:(e)=>handleDragStart(e.nativeEvent)}
           />
           
-          <div class={isTextSetting||isTextLoading||currentImage.textLoading?'editTextToggle hidden':'editTextToggle'}
+          <div class={isTextSetting||isTextLoading||currentImage().textLoading?'editTextToggle hidden':'editTextToggle'}
            style={{transform: `scale(${1/textInfo.scale/editorScale})`}}
             // style={{...{transform: `scale(${1/textInfo.scale/editorScale})`},...isDragging||isTwoFingerDragging?{pointerEvents:'none'}:{}}}
             onClick={()=>{
@@ -575,7 +577,7 @@ function Editor() {
         </div>
 
         <div className='centerChildren' style={{pointerEvents:'none'}}>
-          <div className={isTextLoading||currentImage.textLoading?'textLoader':'textLoader hidden'} style={{transform: `scale(${1/textInfo.scale/editorScale})`}}/>
+          <div className={isTextLoading||currentImage().textLoading?'textLoader':'textLoader hidden'} style={{transform: `scale(${1/textInfo.scale/editorScale})`}}/>
         </div>
 
       </div>
@@ -602,11 +604,15 @@ function Editor() {
         <div id="editorStartText" className={imageSelected!=-1?'fadeOut':null} >請上傳圖片</div>
       :null}
 
-      <TopBar stepEnabled={stepEnabled()} back={()=>{if(stepEnabled().back)stepMove('back')}} redo={()=>{if(stepEnabled().redo)stepMove('redo')}}/>
+      {!status.view?
+        <TopBar stepEnabled={stepEnabled()} back={()=>{if(stepEnabled().back)stepMove('back')}} redo={()=>{if(stepEnabled().redo)stepMove('redo')}}/>
+      :
+        <div style={{width:'100%',height:40}}/>
+      }
       
-      {currentImage!=null?(
+      {currentImage()!=null?(
         <div id='editorWindow'>
-          <div id='editorImage' className={isChanging?'changing':null} style={{backgroundImage:'url('+currentImage.url+')',width:currentImage.width,height:currentImage.height,transform: `scale(${editorScale})`}}>
+          <div id='editorImage' className={isChanging?'changing':null} style={{backgroundImage:'url('+currentImage().url+')',width:currentImage().width,height:currentImage().height,transform: `scale(${editorScale})`}}>
             
             {/* text setting */}
             {textInfo!=null && !isMobile?
@@ -619,26 +625,33 @@ function Editor() {
               </div>
             :null}
 
-            <div className='editorOverflowContainer'>
+            <div className='editorArea'>
 
               {/* text */}
               {status.mode=='admin'&&textInfo!=null? <>{textObject}</>:null}
 
-              {status.mode=='user'&&currentImage.textInfo!=null?
+              {status.mode=='user'&&currentImage().textInfo!=null?
                 <div className='textObject object' 
                   style={{
-                    width:currentImage.textInfo.width,
-                    height:currentImage.textInfo.height,
-                    transform: `translate(${currentImage.textInfo.x-currentImage.textInfo.width*0.5}px, ${currentImage.textInfo.y-currentImage.textInfo.height*0.5}px) rotate(${currentImage.textInfo.rot}deg)`,
-                    backgroundImage: currentImage==null||currentImage.textInfo==null||currentImage.textImage==null? 'none': 'url('+currentImage.textImage.url+')',
+                    width:currentImage().textInfo.width,
+                    height:currentImage().textInfo.height,
+                    transform: `translate(${currentImage().textInfo.x-currentImage().textInfo.width*0.5}px, ${currentImage().textInfo.y-currentImage().textInfo.height*0.5}px) rotate(${currentImage().textInfo.rot}deg)`,
+                    backgroundImage: currentImage()==null||currentImage().textInfo==null||currentImage().textImage==null? 'none': 'url('+currentImage().textImage.url+')',
                   }}
                   onClick={()=>{
-                    if(isMobile)store.dispatch({type:'SET_OVERLAY',mode:'titleSetting'});
-                    else setIsTextSetting(!isTextSetting)
+                    if(!status.view){
+                      if(isMobile)store.dispatch({type:'SET_OVERLAY',mode:'titleSetting'});
+                      else setIsTextSetting(!isTextSetting)
                     }
-                  }>
+                  }}>
 
-                {isTextLoading||currentImage.textLoading?
+                {!status.view?
+                  <div class='editTextToggle' style={{width:60,height:30,fontSize:16,transform:`scale(${1/editorScale})`}}>
+                    編輯
+                  </div>
+                :null}
+
+                {isTextLoading||currentImage().textLoading?
                   <div className='centerChildren' style={{pointerEvents:'none'}}>
                     <div className={'textLoader'} style={{transform: `scale(${1/editorScale})`}}/>
                   </div>
@@ -648,18 +661,19 @@ function Editor() {
               :null}
 
               {/* head */}
-              {status.mode=='admin' || (currentImage.iconSelected!=undefined && currentImage.iconSelected!=-1)? (
+              {status.mode=='admin' || (currentImage().iconSelected!=undefined && currentImage().iconSelected!=-1)? (
                 <>{headObject}</>
               ):(
-                <div className={currentImage.iconSelected && currentImage.iconSelected!=-1? 'headImage hidden' : 'headImage'} 
-                  style={{backgroundImage:`url(${placeHolderImage})`,width:PLACEHOLDER_SIZE,height:PLACEHOLDER_SIZE,transform: `translate(${currentImage.iconInfo.x-PLACEHOLDER_SIZE*0.5}px, ${currentImage.iconInfo.y-PLACEHOLDER_SIZE*0.5}px) rotate(${currentImage.iconInfo.rot}deg) scale(${currentImage.iconInfo.size[0]/PLACEHOLDER_SIZE})`}}
+                <div className={currentImage().iconSelected && currentImage().iconSelected!=-1? 'headImage hidden' : 'headImage'} 
+                  style={{backgroundImage:`url(${placeHolderImage})`,width:PLACEHOLDER_SIZE,height:PLACEHOLDER_SIZE,transform: `translate(${currentImage().iconInfo.x-PLACEHOLDER_SIZE*0.5}px, ${currentImage().iconInfo.y-PLACEHOLDER_SIZE*0.5}px) rotate(${currentImage().iconInfo.rot}deg) scale(${currentImage().iconInfo.size[0]/PLACEHOLDER_SIZE})`}}
                 >
-                  <p style={{fontSize:currentImage.iconInfo.size[0]*0.1,transform:`scale(${1/(currentImage.iconInfo.size[0]/PLACEHOLDER_SIZE)})`}}>請選擇頭像</p>
+                  <p style={{fontSize:currentImage().iconInfo.size[0]*0.1,transform:`scale(${1/(currentImage().iconInfo.size[0]/PLACEHOLDER_SIZE)})`}}>請選擇頭像</p>
                 </div>
               )}
 
             </div>
 
+            {/* admin add text button */}
             {status.mode=='admin'&&textInfo==null? <div className='addTextButton' style={{transform:`scale(${1/editorScale}`}} onClick={addNewText}>新增文字</div> :null}
         
           </div>
@@ -669,7 +683,7 @@ function Editor() {
         )
       }
 
-      {status.mode=='user' && display!='large' &&!status.demo? (
+      {status.mode=='user'&&!status.demo&&!status.view&&display!='large'? (
         <div className='editorBottom'>
           <div className={currentImageIndex>0?'pageArrow':'pageArrow disabled'} onClick={() => {if(currentImageIndex>0){store.dispatch({type:'SELECT_IMAGE',id:images[currentImageIndex-1].id});}}}>
             <Icon path={mdiArrowLeftBold} size={0.8} rotate={0} color="#DDDDDD" style={{transform:`translate(0px,0.5px)`}}/>

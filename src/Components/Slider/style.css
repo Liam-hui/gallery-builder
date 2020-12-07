@@ -47,6 +47,10 @@
   }
 }
 
+.sliderContainer.sliderLoading{
+  pointer-events: none;
+}
+
 .sliderContainer.deleting .sliderImageWrapper{
   transition: none; 
 }

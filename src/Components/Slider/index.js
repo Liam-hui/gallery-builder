@@ -15,6 +15,7 @@ function Slider(props) {
 
   const status = useSelector(state => state.status);
   const screen = useSelector(state => state.screen);
+  const sliderLock = useSelector(state => state.sliderLock);
 
   const [draggingId,setDraggingId] = useState(null);
   const [draggingOrder,setDraggingOrder] = useState(null);
@@ -22,22 +23,12 @@ function Slider(props) {
   const [dragAmount,setDragAmount] = useState({x:0,y:0});
 
   const [highlighted,setHighlighted] = useState(-1);
-  const [deleting,setDeleting] = useState(false);
   const [sliderLoading,setSliderLoading] = useState(false);
 
   useEffect(() => {
-    // images.forEach(image=>{
-    //   if(image.deleted) {
-    //     setLoading(loading.filter(x=>x==image.id));
-    //     setDeleting(true);
-    //     if(mode=='image')store.dispatch({type:'DELETE_IMAGE_FINISH',id:image.id})
-    //     else if(mode=='icon')store.dispatch({type:'DELETE_ICON_FINISH',id:image.id})
-    //     setTimeout(()=>setDeleting(false),1000);
-    //   }
-    // })
-    // if(sliderLoading&&images.length==sliderCount) setSliderLoading(false);
+    if(images.some(x=>x.loading||x.deleting)) setSliderLoading(true);
+    else setSliderLoading(false);
   }, [images]);
-
 
   let WIDTH,HEIGHT;
   if(screen.screenWidth>768 || screen.screenHeight>768) {
@@ -138,7 +129,7 @@ function Slider(props) {
 
             <div className='sliderImage' style={{width:width*0.9,height:height*0.9}}>
               <img src={image.url} draggable="false" style={{width:'100%',height:'100%'}} onClick={isMobile? ()=>{if(highlighted==image.id) setHighlighted(-1); else setHighlighted(image.id)}:()=>selectItem(image.id)} 
-                onMouseOut={(e)=>{
+                onMouseLeave={(e)=>{
                   if(e.relatedTarget.className!='sliderButtonClickArea' && e.relatedTarget.className!='chooseButtonClickArea') setHighlighted(-1);
                 }
               }/>
@@ -224,7 +215,8 @@ function Slider(props) {
   if(status.mode=='admin') className += ' isAdmin';
   if(vertical) className += ' vertical';
   if(draggingId==null) className += ' notDragging';
-  if(deleting) className += ' deleting';
+  if(sliderLock) className += ' deleting';
+  if(sliderLoading) className += '  sliderLoading';
 
   return (
     <div className={"sliderContainer"+className} 

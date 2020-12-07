@@ -1,26 +1,26 @@
+import { mdiTruckOutline } from '@mdi/js';
 import { combineReducers } from 'redux';
 import {Services} from '../../services';
 
-const initialStep = {
-  current:1,
-  store:[
-    {object:'headObject',objectInfo:null},
-    {object:'textObject',objectInfo:null}
-  ]
-}
 
 const imagesReducer = ( state = [], action ) => {
+  const initialStep = {
+    current:1,
+    store:[
+      {object:'headObject',objectInfo:null},
+      {object:'textObject',objectInfo:null}
+    ]
+  }
   let state_new = state.slice();
   switch( action.type ) {
     case 'SET_IMAGES':
       return action.images;
     case 'ADD_IMAGE':
-      return state.concat( {...action.image,  ...{step: Object.assign({}, initialStep)}}); 
+      return state.concat( {...action.image,  ...{step: {...initialStep} }}); 
     case 'ADD_IMAGE_START':
-      console.log('start');
       return state.concat( {...action.image,  ...{loading:true}}); 
     case 'ADD_IMAGE_SUCCESS':
-      state_new[state_new.findIndex(image => image.order == action.image.order)] = {...action.image,  ...{step: Object.assign({}, initialStep),loading: false}};
+      state_new[state_new.findIndex(image => image.id == action.ori_id)] = {...state_new.find(image => image.id == action.ori_id), ...action.image,  ...{step: {...initialStep} } ,loading: false};
       return state_new;
     case 'ADD_IMAGE_FAIL':
       state_new.forEach(image => {
@@ -178,14 +178,42 @@ const statusReducer = ( state = {mode:null}, action ) => {
   }
 }
 
-const overlayReducer = ( state = {on:'on',mode:'loading'}, action ) => {
+const overlayReducer = ( state = {on:'on',mode:'loading',message:null,cancel:false}, action ) => {
   switch( action.type ) {
     case 'SET_OVERLAY':
-      return {on:'on',mode:action.mode};
+      return {on:'on',mode:action.mode,message:action.message?action.message:null,cancel:action.cancel?true:false,confirm:action.confirm?action.confirm:null};
     case 'HIDE_OVERLAY':
-      return {on:'hidden',mode:state.mode};
+      return {...state,...{on:'hidden'}};
     case 'OFF_OVERLAY':
       return {on:'off',mode:null};
+    default: return state;
+  }
+}
+
+const initReducer = ( state = {}, action ) => {
+  switch( action.type ) {
+    case 'INIT_IMAGES':
+      return {...state, ...{images:action.count}};
+    case 'INIT_DONE':
+      return {...state, ...{done:true}};
+    default: return state;
+  }
+}
+
+const sliderLockReducer = ( state = false, action ) => {
+  switch( action.type ) {
+    case 'LOCK_SLIDER':
+      return true;
+    case 'UNLOCK_SLIDER':
+      return false;
+    default: return state;
+  }
+}
+
+const messageReducer = ( state = null, action ) => {
+  switch( action.type ) {
+    case 'SET_MESSAGE':
+      return action.message;
     default: return state;
   }
 }
@@ -207,6 +235,11 @@ const reducers = combineReducers({
 
   overlay: overlayReducer,
 
+  init: initReducer,
+
+  sliderLock:sliderLockReducer,
+
+  message:messageReducer,
 });
 
 export default reducers;

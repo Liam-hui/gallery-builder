@@ -4,7 +4,7 @@ import store from '../../store';
 import { useSelector } from "react-redux";
 import {Services} from '../../services';
 
-import {AddIconPopUp,setIconPopUpImage} from '../../Components/AddIconPopUp';
+import {setIconPopUpImage} from '../../Components/AddIconPopUp';
 
 function AddImage(props) {
 
@@ -35,8 +35,9 @@ function AddImage(props) {
               store.dispatch({type:'SET_OVERLAY',mode:'uploadIcon'});
             }
             else if(status.mode=='admin') {
-              store.dispatch({type:'ADD_IMAGE_START',image:{order:currentLength+index,loading:true}});
-              Services.adminUploadPhoto({base64:reader.result,width:this.width,height:this.height,order:currentLength+index});
+              let temp_id = Math.random().toString(36).substr(2, 9);
+              store.dispatch({type:'ADD_IMAGE_START',image:{id:temp_id,order:currentLength+index,loading:true}});
+              Services.adminUploadPhoto({id:temp_id,base64:reader.result,width:this.width,height:this.height,order:currentLength+index});
             }
           };
           image.src = reader.result;
@@ -55,11 +56,18 @@ function AddImage(props) {
 
   const save = (confirm) => {
     if(status.mode=='user'){
+      store.dispatch({type:'SET_OVERLAY',mode:'loading'});
       Services.userUpdatePhotos(images,confirm);
     }
     else if(status.mode=='admin'){
-      Services.adminUpdatePhotos(images);
+      store.dispatch({type:'SET_OVERLAY',mode:'loading'});
+      Services.adminUpdatePhotos(images,null,null,true);
     }
+  }
+
+  const finish = () => {
+    if(images.every(x=>x.iconSelected!=-1)) store.dispatch({type:'SET_OVERLAY',mode:'message',message:'完成後將不能修改',cancel:true,confirm:()=>Services.userUpdatePhotos(images,1)});
+    else store.dispatch({type:'SET_OVERLAY',mode:'message',message:'請先選擇所有頭像'});
   }
 
   let className = '';
@@ -71,12 +79,8 @@ function AddImage(props) {
       <label className='borderBox' for="add-image">上傳圖片</label>
       <input onChange={handleFileUpload} type="file" id="add-image" name="uploadPhotoInput" accept="image/*" multiple={status.mode=='admin'?true:false}/>
       
-      {!status.demo?
-      <>
-      <label className='borderBox' onClick={()=>save(0)}>儲存</label>
-      {status.mode=='user'?<label className='borderBox' onClick={()=>save(1)}>完成</label>:null}
-      </>
-      :null}
+      {status.mode=='user'&&!status.demo||status.mode=='admin'?<label className='borderBox' onClick={()=>save(0)}>儲存</label>:null}
+      {status.mode=='user'&&!status.demo?<label className='borderBox' onClick={()=>finish()}>完成</label>:null}
 
     </div>
   );
