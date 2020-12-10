@@ -178,10 +178,10 @@ const statusReducer = ( state = {mode:null}, action ) => {
   }
 }
 
-const overlayReducer = ( state = {on:'on',mode:'loading',message:null,cancel:false}, action ) => {
+const overlayReducer = ( state = {on:'on',mode:'loading',message:'圖片載入中',cancel:false}, action ) => {
   switch( action.type ) {
     case 'SET_OVERLAY':
-      return {on:'on',mode:action.mode,message:action.message?action.message:null,cancel:action.cancel?true:false,confirm:action.confirm?action.confirm:null};
+      return {on:'on',mode:action.mode,message:action.message?action.message:null,cancel:action.cancel?true:false,confirm:action.confirm?action.confirm:null,uploading:action.uploading?action.uploading:null,confirmText:action.confirmText?action.confirmText:null};
     case 'HIDE_OVERLAY':
       return {...state,...{on:'hidden'}};
     case 'OFF_OVERLAY':

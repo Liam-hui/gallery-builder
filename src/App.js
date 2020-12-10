@@ -9,8 +9,9 @@ import {isMobile} from 'react-device-detect';
 import Editor from './Components/Editor';
 import ImagesList from './Components/ImagesList';
 import IconsList from './Components/IconsList';
-import Loading from './Components/Loading';
+import LoadingPopUp from './Components/LoadingPopUp';
 import TitleSetting from './Components/TitleSetting';
+import TopBar from './Components/TopBar';
 
 import MessagePopUp from './Components/MessagePopUp';
 import {AddIconPopUp} from './Components/AddIconPopUp';
@@ -23,6 +24,7 @@ function App() {
   const screen = useSelector(state => state.screen);
 
   useEffect(() => {
+
     initScreen();
 
     let mode = window.mode;
@@ -46,6 +48,7 @@ function App() {
     }
 
     store.dispatch({type:'SET_STATUS',status:{mode:mode,demo:demo,view:view,product_id:product_id,order_id:order_id,customer_id:customer_id}});
+  
   }, []);
 
   //execute when resizing finish
@@ -117,7 +120,7 @@ function App() {
           {display=='smallLand'?<ImagesList/>:null}
 
           <div className='ColumnRevContainer'>
-        
+
             {display!='smallLand'?(
               <div className="bottomRow">
                 <ImagesList/>
@@ -125,6 +128,8 @@ function App() {
             ):null} 
     
             <Editor/>
+
+            <TopBar view={true} />
           </div>
         </>
       :null}
@@ -151,9 +156,7 @@ function App() {
 
           {overlay.mode=='loading'?
             <div className='overlayChildren'>
-              <div className='loading'>
-                <Loading scale={0.6} />
-              </div>
+              <LoadingPopUp/>
             </div>
           :null}
 

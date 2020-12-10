@@ -34,6 +34,13 @@
   z-index: 99;
 }
 
+.closeTextSettingMobile{
+  margin-left: auto;
+  /* margin-right: 3px; */
+  height:35px;
+  width:35px;
+}
+
 .titleSettingMobile{
   width:300px;
   height:400px;

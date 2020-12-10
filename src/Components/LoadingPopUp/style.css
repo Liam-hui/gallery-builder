@@ -1,0 +1,18 @@
+.loadingPopUp {
+  border-radius: 14px;
+  width:120px;
+  height:120px;
+  opacity: 0.9;
+  background-color: rgba(220,220,220,0.9);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+
+.loadingPopUpText {
+  color:black;
+  font-size: 16px;
+}
+
+

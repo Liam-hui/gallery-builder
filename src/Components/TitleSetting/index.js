@@ -40,7 +40,13 @@ const inlineStyles = {
   },
   topColor:{
     width:'100%',
-    height:isMobile?35:50,
+    height:50,
+  },
+  topColorMobile:{
+    width:'100%',
+    height:45,
+    display:'flex',
+    alignItems:'center',
   },
   pointer: {
     width: '18px',
@@ -133,7 +139,7 @@ const inlineStyles = {
     borderWidth: '12px 26px 12px 0',
   },
   bottomSaveButton:{
-    height:isMobile? 50:30,
+    height:isMobile? 40:30,
     width:'100%',
     backgroundColor:'black',
     display:'flex',
@@ -197,7 +203,7 @@ function TitleSettingComponent(props) {
     let titleTextPart = textPart(titleText,customer_text);
     let showTextPart = textPart(event.target.value,'{顧客輸入}');
 
-    if(status.mode=='admin'&& (titleTextPart[0]==showTextPart[0]||titleTextPart[1]==showTextPart[1] )){
+    if(status.mode=='admin'&& event.target.value.includes('{顧客輸入}') && (titleTextPart[0]==showTextPart[0]||titleTextPart[1]==showTextPart[1] )){
       setShowText(event.target.value);
       setTitleText(showTextPart[0]+customer_text+showTextPart[1])
     }
@@ -293,10 +299,10 @@ function TitleSettingComponent(props) {
   else return(
     <div id='titleSetting' style={{...inlineStyles.mobileContainer,  ...{width:mobileWidth,height:status.mode=='admin'?screen.screenHeight*0.7:300}}}>
 
-      <div style={{...inlineStyles.topColor,  ...{backgroundColor:props.hex} }}/>
-
-      <div className='closeTextSetting' onClick={()=>{store.dispatch({type:'CLOSE_OVERLAY'});}}>
-        <Icon path={mdiCloseThick} style={{transform:`translate(0.5px,0.5px)`}} size={0.65} color="#DDDDDD"/>
+      <div style={{...inlineStyles.topColorMobile,  ...{backgroundColor:props.hex} }}>
+        <div className='closeTextSettingMobile flexCenter' onClick={()=>{store.dispatch({type:'CLOSE_OVERLAY'});}}>
+          <Icon path={mdiCloseThick} style={{transform:`translate(0.5px,0.5px)`}} size={0.65} color="#DDDDDD"/>
+        </div>
       </div>
 
       {status.mode=='admin'?
@@ -327,7 +333,7 @@ function TitleSettingComponent(props) {
         </>
       :null}
 
-      <div style={{backgroundColor:'white',height:isMobile? status.mode=='admin'?'20%':240:'unset'}}>
+      <div style={{backgroundColor:'white',height:isMobile? status.mode=='admin'?'20%':220:'unset'}}>
         <div style={inlineStyles.textEditContainer}>
           <textarea value={titleText==null?'請輸入文字':showText}  maxLength="80" onFocus={()=>{if(titleText==null)setTitleText('')}} onBlur={()=>{if(titleText=='')setTitleText(null)}} onChange={handleTextChange} className='textInput'></textarea>
         </div>

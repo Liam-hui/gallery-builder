@@ -22,32 +22,31 @@ function adminGetAlbumPhotos(product_id) {
   })
   .then(async (response) => {
     console.log(response.data.data);
-    // store.dispatch({type:'INIT_IMAGES',count:Object.entries(response.data.data).length});
     store.dispatch({type:'CLOSE_OVERLAY'});
     for (const [id, photo] of Object.entries(response.data.data)) {
       let temp_id = Math.random().toString(36).substr(2, 9);
       if(photo.sequence>-1){
 
         let iconInfo = {
-          size: photo.details.size,
-          x: photo.details.position[0],
-          y: photo.details.position[1],
-          rot: photo.details.rotate,
+          size: [parseFloat(photo.details.size[0]),parseFloat(photo.details.size[1])],
+          x: parseFloat(photo.details.position[0]),
+          y: parseFloat(photo.details.position[1]),
+          rot: parseFloat(photo.details.rotate),
           scale:1,
-          height:photo.details.size[0],
-          width:photo.details.size[1],
+          height:parseFloat(photo.details.size[0]),
+          width:parseFloat(photo.details.size[1]),
         }
 
         let textInfo = null;
         if(photo.details.title!=null){
           textInfo = {
             title:photo.details.title.title,
-            height:photo.details.title.size[0],
-            width:photo.details.title.size[1],
+            height:parseFloat(photo.details.title.size[0]),
+            width:parseFloat(photo.details.title.size[1]),
             scale:1,
-            x:photo.details.title.position[0],
-            y:photo.details.title.position[1],
-            rot:photo.details.title.rotate,
+            x:parseFloat(photo.details.title.position[0]),
+            y:parseFloat(photo.details.title.position[1]),
+            rot:parseFloat(photo.details.title.rotate),
             color:photo.details.title.color,
           }
         }
@@ -57,7 +56,7 @@ function adminGetAlbumPhotos(product_id) {
         let image = new Image();
         image.onload = function () {
           store.dispatch({type:'ADD_IMAGE_SUCCESS',ori_id:temp_id,image:{url:this.src,height:this.height,width:this.width,id:id,iconInfo:iconInfo,textInfo:textInfo,order:photo.sequence}});  
-          if(photo.details.title!=null&&photo.details.title.title!='') titleToImage(id,photo.details.title.title);
+          if(photo.details.title!=null&&photo.details.title.title!=null) titleToImage(id,photo.details.title.title);
         };
 
         let getPhotoBase64 = await api.get('album/getPhotoBase64/base/'+id);
@@ -68,66 +67,66 @@ function adminGetAlbumPhotos(product_id) {
     }
   }, (error) => {
     if(error&&error.response) console.log(error.response.data);
-    // store.dispatch({type:'INIT_DONE'});
     store.dispatch({type:'CLOSE_OVERLAY'});
   });
 }
 
-function adminUploadPhoto(photo) {
-  let size = Math.max(photo.width,photo.height)*0.2;
-  let body = {
-    "product":status().product_id,
-    "photos":[
-      {
-        "type":"new",
-        "id":photo.id,
-        "sequence":photo.order,
-        "photo_details":{
-          "position":[photo.width*0.5,photo.height*0.5],
-          "size":[size,size],
-          "rotate":0,
-        },
-        "img_base64":photo.base64,
-      }
-    ],
-  }
+function adminUploadPhoto(photos) {
+  let body = new FormData();
+  body.append('product', status().product_id);
 
-  let iconInfo = {
-    size: [size,size],
-    height:size,
-    width:size,
-    x: photo.width*0.5,
-    y: photo.height*0.5,
-    rot: 0,
-    scale:1,
-  }
+  photos.forEach((photo,index)=>{
+    let size = Math.max(photo.width,photo.height)*0.2;
 
-  api.post('album/adminAddPhoto', body,{
+    body.append(`photos[${index}][type]`, 'new');
+    body.append(`photos[${index}][id]`, photo.id);
+    body.append(`photos[${index}][sequence]`, photo.order);
+    body.append(`photos[${index}][image]`, photo.file);
+    body.append(`photos[${index}][photo_details][position][0]`, photo.width*0.5);
+    body.append(`photos[${index}][photo_details][position][1]`, photo.height*0.5);
+    body.append(`photos[${index}][photo_details][size][0]`, size);
+    body.append(`photos[${index}][photo_details][size][1]`, size);
+    body.append(`photos[${index}][photo_details][rotate]`, 0);
+
+  });
+
+  api.post('album/adminAddPhotoForm', body,{
+    headers: { 'Content-Type': 'multipart/form-data'  },
   })
   .then((response) => {
-    console.log(response.data.data);
     if (response.data.status==200) {
-      store.dispatch({type:'ADD_IMAGE_SUCCESS',ori_id:photo.id,image:{url:photo.base64,height:photo.height,width:photo.width,id:response.data.data[photo.id],iconInfo:iconInfo,order:photo.order}})
+      console.log(response.data.data);
+      for(const photo of photos){
+        let size = Math.max(photo.width,photo.height)*0.2;
+        let iconInfo = {
+          size: [size,size],
+          height:size,
+          width:size,
+          x: photo.width*0.5,
+          y: photo.height*0.5,
+          rot: 0,
+          scale:1,
+        }
+
+        store.dispatch({type:'ADD_IMAGE',image:{url:photo.base64,height:photo.height,width:photo.width,id:response.data.data[photo.id],iconInfo:iconInfo,order:photo.order}})
+      }
+      store.dispatch({type:'CLOSE_OVERLAY'});
     }
   }, (error) => {
     if(error&&error.response) {
       console.log(error.response.data);
-      store.dispatch({type:'ADD_IMAGE_FAIL',order:photo.order});
     }
   });
 }
 
 function adminDeletePhoto(photo_id,deleteImage) {
-  let body = {
-    "product":status().product_id,
-    "photos": [
-      {
-        "type":"delete",
-        "id":photo_id,
-      }
-    ]
-  }
-  api.post('album/adminAddPhoto', body,{
+  let body = new FormData();
+  body.append('product', status().product_id);
+  body.append(`photos[0][type]`, 'delete');
+  body.append(`photos[0][id]`, photo_id);
+
+  api.post('album/adminAddPhotoForm', body,{
+    headers: { 'Content-Type': 'multipart/form-data'  },
   })
   .then((response) => {
     if (response.data.status==200) {
@@ -157,38 +156,37 @@ function adminUpdatePhotoOrder(photo_id,newOrder,product_id) {
 }
 
 function adminUpdatePhotos(photos,after,color,save) {
-  console.log(photos);
-  // photos = photos.sort((a,b) => a.order - b.order)
-  photos = photos.filter(x=>!x.loading).map(photo=>{ 
-    let photoData = {
-      "type":"update",
-      "id":photo.id,
-      "sequence":photo.order,
-      "photo_details":{
-        "position":[photo.iconInfo.x,photo.iconInfo.y],
-        "size":[photo.iconInfo.height*photo.iconInfo.scale,photo.iconInfo.width*photo.iconInfo.scale],
-        "rotate":photo.iconInfo.rot,
-      }
-    }
+  let body = new FormData();
+  body.append('product', status().product_id);
+
+  photos.forEach((photo,index)=>{
+
+    body.append(`photos[${index}][type]`, 'update');
+    body.append(`photos[${index}][id]`, photo.id);
+    body.append(`photos[${index}][sequence]`, photo.order);
+    body.append(`photos[${index}][photo_details][position][0]`, photo.iconInfo.x);
+    body.append(`photos[${index}][photo_details][position][1]`, photo.iconInfo.y);
+    body.append(`photos[${index}][photo_details][size][0]`, photo.iconInfo.height*photo.iconInfo.scale);
+    body.append(`photos[${index}][photo_details][size][1]`, photo.iconInfo.width*photo.iconInfo.scale);
+    body.append(`photos[${index}][photo_details][rotate]`, photo.iconInfo.rot);
+
     if(photo.textInfo!=null) {
-      photoData.photo_details.title = {
-        "title":photo.textTitle,
-        "position":[photo.textInfo.x,photo.textInfo.y],
-        "size":[photo.textInfo.height*photo.textInfo.scale,photo.textInfo.width*photo.textInfo.scale],
-        "rotate":photo.textInfo.rot,
-      }
+      body.append(`photos[${index}][photo_details][title][title]`, photo.textTitle);
+      body.append(`photos[${index}][photo_details][title][position][0]`, photo.textInfo.x);
+      body.append(`photos[${index}][photo_details][title][position][1]`, photo.textInfo.y);
+      body.append(`photos[${index}][photo_details][title][size][0]`, photo.textInfo.height*photo.textInfo.scale);
+      body.append(`photos[${index}][photo_details][title][size][1]`, photo.textInfo.width*photo.textInfo.scale);
+      body.append(`photos[${index}][photo_details][title][rotate]`, photo.textInfo.rot);
       if(color) {
-        photoData.photo_details.title.color = color;
+        body.append(`photos[${index}][photo_details][title][color]`, color);
         store.dispatch({type:'UPDATE_COLOR',id:photo.id,color:color});
       }
     }
-    return photoData;
+
   });
-  let body = {
-    "product":status().product_id,
-    "photos":photos,
-  }
-  api.post('album/adminAddPhoto', body,{
+
+  api.post('album/adminAddPhotoForm', body,{
+    headers: { 'Content-Type': 'multipart/form-data'  },
   })
   .then((response) => {
     console.log(response.data);
@@ -213,22 +211,22 @@ function userGetPhotos(order_id,product_id) {
         textInfo = {
           adminTitle:photo.admin_title,
           title:photo.details.title.title,
-          height:photo.details.title.size[0],
-          width:photo.details.title.size[1],
+          height:parseFloat(photo.details.title.size[0]),
+          width:parseFloat(photo.details.title.size[1]),
           scale:1,
-          x:photo.details.title.position[0],
-          y:photo.details.title.position[1],
-          rot:photo.details.title.rotate,
+          x:parseFloat(photo.details.title.position[0]),
+          y:parseFloat(photo.details.title.position[1]),
+          rot:parseFloat(photo.details.title.rotate),
         }
       }
 
       let iconInfo = {
-        size: photo.details.size,
-        width: photo.details.size[1],
-        height: photo.details.size[0],
-        x: photo.details.position[0],
-        y: photo.details.position[1],
-        rot: photo.details.rotate,
+        size: [parseFloat(photo.details.size[0]),parseFloat(photo.details.size[1])],
+        width: parseFloat(photo.details.size[1]),
+        height: parseFloat(photo.details.size[0]),
+        x: parseFloat(photo.details.position[0]),
+        y: parseFloat(photo.details.position[1]),
+        rot: parseFloat(photo.details.rotate),
         scale:1,
       }
 
@@ -238,14 +236,6 @@ function userGetPhotos(order_id,product_id) {
       image.onload = async function () {
         store.dispatch({type:'ADD_IMAGE_SUCCESS',image:{url:this.src,height:this.height,width:this.width,id:id,textInfo:textInfo,iconInfo:iconInfo,order:photo.details.sequence}})
         
-        if (photo.details.title.title!=null) {
-          let getPhotoBase64 = await api.get('album/getPhotoBase64/customer/'+photo.details.title.title);
-          let img_base64 = getPhotoBase64.data.data;
-          if(!img_base64.includes("data:image")) img_base64 = 'data:image/jpg;base64,'+img_base64;
-          store.dispatch({type:'ADD_TITLE_IMAGE',id:id,image:{url:img_base64,id:photo.details.title.title}});
-        }
-        else if(photo.admin_title!=null&&photo.admin_title!='') titleToImage(id,photo.admin_title);
-
         if(photo.details.photo!=null) {
           let getPhotoBase64 = await api.get('album/getPhotoBase64/customer/'+photo.details.photo);
           console.log(getPhotoBase64.data);
@@ -253,6 +243,14 @@ function userGetPhotos(order_id,product_id) {
           if(!img_base64.includes("data:image")) img_base64 = 'data:image/jpg;base64,'+img_base64;
           userSelectIcon(img_base64,photo.details.photo,id);
         }
+
+        if (photo.details.title&&photo.details.title.title!=null) {
+          let getPhotoBase64 = await api.get('album/getPhotoBase64/customer/'+photo.details.title.title);
+          let img_base64 = getPhotoBase64.data.data;
+          if(!img_base64.includes("data:image")) img_base64 = 'data:image/jpg;base64,'+img_base64;
+          store.dispatch({type: 'ADD_TITLE_IMAGE',id:id,image:{url:img_base64,id:photo.details.title.title}});
+        }
+        else if(photo.admin_title!=null&&photo.admin_title!='') titleToImage(id,photo.admin_title);
     
       };
 
@@ -291,7 +289,9 @@ function userUploadIcon(icon,original) {
       image.onload = function () {
         store.dispatch({type:'ADD_ICON_SUCCESS',icon:{url:this.src,height:this.height,width:this.width,id:status().demo?Math.random().toString(36).substr(2, 9):response.data.data.img_uuid}});
       };
-      image.src = original==1? response.data.data.img_base64: 'data:image/jpg;base64,'+response.data.data.img_base64;
+      let img_base64 = response.data.data.img_base64;
+      if(!img_base64.includes("data:image")) img_base64 = 'data:image/jpg;base64,'+img_base64;
+      image.src = img_base64;
     }
   }, (error) => {
     if(error&&error.response) console.log(error.response.data);
@@ -303,7 +303,6 @@ function userUploadIcon(icon,original) {
 function userUpdatePhotos(photos,confirm) {
   let photoDetails = {};
   photos.forEach(photo=>{
-    console.log(photo.textImage);
 
     if( (photo.iconInfo!=null&&photo.iconSelected!=null) || (photo.textImage&&photo.textImage.id) ){
 
@@ -346,8 +345,9 @@ function titleToImage(photo_id,titleText,finish) {
   let real_text = titleText;
   real_text = realText(titleText,'Customer');
 
-  let mode = 0;
-  if (status().mode=='admin') mode = 1;
+  let mode;
+  if(status().demo) mode = 0;
+  else if (status().mode=='admin') mode = 1;
   else if (status().mode=='user') mode = 2;
 
   let body = {
@@ -359,8 +359,10 @@ function titleToImage(photo_id,titleText,finish) {
   api.post('album/textToImg', body,{
   })
   .then((response) => {
+    console.log(response.data.data);
     if (response.data.status==200) {
-      let image_base64 = 'data:image/jpg;base64,'+response.data.data.img_base64;
+      let image_base64 = response.data.data.img_base64;
+      if(!image_base64.includes("data:image")) image_base64 = 'data:image/jpg;base64,'+image_base64;
       if(status().mode=='admin'){
         store.dispatch({type:'ADD_TITLE_IMAGE',id:photo_id,title:titleText,image:{url:image_base64}});
         adminUpdatePhotos([store.getState().images.find(image => image.id == photo_id)]);
@@ -401,22 +403,22 @@ function demoGetPhoto(product_id) {
       if(details.title!=null){
         textInfo = {
           adminTitle:details.title.title,
-          height:details.title.size[0],
-          width:details.title.size[1],
+          height:parseFloat(details.title.size[0]),
+          width:parseFloat(details.title.size[1]),
           scale:1,
-          x:details.title.position[0],
-          y:details.title.position[1],
-          rot:details.title.rotate,
+          x:parseFloat(details.title.position[0]),
+          y:parseFloat(details.title.position[1]),
+          rot:parseFloat(details.title.rotate),
         }
       }
 
       let iconInfo = {
-        size: details.size,
-        width: details.size[1],
-        height: details.size[0],
-        x: details.position[0],
-        y: details.position[1],
-        rot: details.rotate,
+        size: [parseFloat(details.size[0]),parseFloat(details.size[1])],
+        width: parseFloat(details.size[1]),
+        height: parseFloat(details.size[0]),
+        x: parseFloat(details.position[0]),
+        y: parseFloat(details.position[1]),
+        rot: parseFloat(details.rotate),
         scale:1,
       }
 

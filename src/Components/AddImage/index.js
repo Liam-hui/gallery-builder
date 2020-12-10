@@ -14,37 +14,66 @@ function AddImage(props) {
   const display = useSelector(state => state.display);
   const images = useSelector(state => state.images);
 
-  const icons = useSelector(state => state.icons);
-
   async function handleFileUpload(e) {
+    store.dispatch({type:'SET_OVERLAY',mode:'loading',message:'圖片上傳中'});
     try {
       const files = e.target.files;
       if (!files) return;
 
-      let currentLength = images.length;
+      if(status.mode=='admin') {
+        let currentLength = images.length;
+        let photos = [];
+        for (const [index, file] of Array.from(files).entries()) {
 
-      Array.from(files).forEach((file,index,array)  => {
+          let image = await load(file);
+          photos = photos.concat([{...image, ...{file:file}}]);
 
-        let reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = function () {
-          let image = new Image();
-          image.onload = function () {
-            if(status.mode=='user') {
-              setIconPopUpImage(reader.result);
-              store.dispatch({type:'SET_OVERLAY',mode:'uploadIcon'});
-            }
-            else if(status.mode=='admin') {
-              let temp_id = Math.random().toString(36).substr(2, 9);
-              store.dispatch({type:'ADD_IMAGE_START',image:{id:temp_id,order:currentLength+index,loading:true}});
-              Services.adminUploadPhoto({id:temp_id,base64:reader.result,width:this.width,height:this.height,order:currentLength+index});
-            }
-          };
-          image.src = reader.result;
+          function load(file) {
+            return new Promise((resolve, reject) => {
+              let reader = new FileReader();
+              reader.readAsDataURL(file);
+              reader.onload = async function () {
+                resolve(await loadImage(reader.result));
+              };
+              reader.onerror = ()=>reject()
+            })
+          }
+
+          function loadImage(src) {
+            return new Promise((resolve, reject) => {
+              let image = new Image();
+              image.onload = function () {
+                let temp_id = Math.random().toString(36).substr(2, 9);
+                resolve({id:temp_id,base64:src,width:this.width,height:this.height,order:currentLength+index});
+              };
+              image.onerror = ()=>reject()
+              image.src = src;
+            })
+          }
+          
         };
-        
-        
-      });
+
+        Services.adminUploadPhoto(photos);
+      }
+
+      else if(status.mode=='user') {
+        Array.from(files).forEach((file,index)  => {
+
+          let reader = new FileReader();
+          reader.readAsDataURL(file);
+          reader.onload = function () {
+            let image = new Image();
+            image.onload = function () {
+              if(status.mode=='user') {
+                setIconPopUpImage(reader.result);
+                store.dispatch({type:'SET_OVERLAY',mode:'uploadIcon'});
+              }
+            };
+            image.src = reader.result;
+          };
+          
+        });
+      }
 
     } catch (error) {
       alert(error);
@@ -56,11 +85,11 @@ function AddImage(props) {
 
   const save = (confirm) => {
     if(status.mode=='user'){
-      store.dispatch({type:'SET_OVERLAY',mode:'loading'});
+      store.dispatch({type:'SET_OVERLAY',mode:'loading',message:'儲存中'});
       Services.userUpdatePhotos(images,confirm);
     }
     else if(status.mode=='admin'){
-      store.dispatch({type:'SET_OVERLAY',mode:'loading'});
+      store.dispatch({type:'SET_OVERLAY',mode:'loading',message:'儲存中'});
       Services.adminUpdatePhotos(images,null,null,true);
     }
   }

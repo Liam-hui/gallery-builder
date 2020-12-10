@@ -34,6 +34,7 @@ function Editor() {
   const [frontObject,setFrontObject] = useState('headObject');
   const [iconInfo,setIconInfo] = useState({width:PLACEHOLDER_SIZE,height:PLACEHOLDER_SIZE,x:0,y:0,rot:0,scale:1,flip:false});
   const [textInfo,setTextInfo] = useState(null);
+  const [iconTooBig,setIconTooBig] = useState(false);
 
   const [dragStart,setDragStart] = useState({});
   const [scaleStart,setScaleStart] = useState({});
@@ -101,6 +102,16 @@ function Editor() {
       // store.dispatch({type:'UPDATE_STEP',step:null,id:imageSelected});
     }
   }, [currentIcon]);
+
+  useEffect(() => {
+    if(iconInfo.scale>1&&iconTooBig!=null&&!iconTooBig) {
+      setIconTooBig(true);
+      if(isMobile)setTimeout(()=> {
+        setIconTooBig(null);
+      }, 3000);
+    }
+    if(iconInfo.scale<=1) setIconTooBig(false);
+  }, [iconInfo.scale]);
 
   useEffect(() => {
     if(touchCount>1) {
@@ -455,14 +466,6 @@ function Editor() {
         {status.mode=='admin'? <p style={{fontSize:iconInfo.width*0.1}}>移動此圖示</p>:null}
       </div>
 
-      {iconInfo.scale>1&&status.mode=='user'&&!status.view?(
-        <div className="headImageWarningContainer" style={{width: 40/iconInfo.scale/editorScale,height: 40/iconInfo.scale/editorScale,padding: 10/iconInfo.scale/editorScale}}>
-          <div className='headImageWarning' style={{borderRadius: 6/iconInfo.scale/editorScale}}>
-            <Icon path={mdiExclamationThick} size={1.2/iconInfo.scale/editorScale} color="white"/>
-          </div>
-        </div>
-      ):(null)}
-
       <div className={isEditing&&currentObject=='headObject'?'tools enabled ':'tools'} style={{borderWidth:1.5/iconInfo.scale/editorScale}}>
         <div class='dragClickArea' draggable="false" 
           style={{width:'100%',height:'100%'}} 
@@ -498,6 +501,23 @@ function Editor() {
           </>
         ):null}
       </div>
+
+      {(iconTooBig||iconTooBig==null)&&status.mode=='user'&&!status.view?(
+        <>
+        <div className="headImageWarningContainer" style={{width: 40/iconInfo.scale/editorScale,height: 40/iconInfo.scale/editorScale,padding: 17/iconInfo.scale/editorScale}}>
+          <div className='headImageWarning' style={{borderRadius: 6/iconInfo.scale/editorScale}}>
+            <Icon path={mdiExclamationThick} size={1.2/iconInfo.scale/editorScale} color="white"/>
+          </div>
+
+        {!isMobile?
+          <div className='headImageWarningTextOuter' style={{left:20/iconInfo.scale/editorScale,top:60/iconInfo.scale/editorScale,transform: `scale(${1/iconInfo.scale/editorScale})`}}>
+            <div className='headImageWarningText'>圖片超出原來大小，可能會模糊</div>
+          </div>
+        :null}
+
+        </div>
+        </>
+      ):(null)}
 
     </div>
   );
@@ -576,9 +596,11 @@ function Editor() {
             
         </div>
 
-        <div className='centerChildren' style={{pointerEvents:'none'}}>
-          <div className={isTextLoading||currentImage().textLoading?'textLoader':'textLoader hidden'} style={{transform: `scale(${1/textInfo.scale/editorScale})`}}/>
-        </div>
+        {isTextLoading||currentImage().textLoading?
+            <div className='centerChildren' style={{pointerEvents:'none',transform:`scale(${0.4*1/textInfo.scale/editorScale})`}}>
+              <div className={'textLoader'}/>
+            </div>
+          :null} 
 
       </div>
     </div>
@@ -605,10 +627,16 @@ function Editor() {
       :null}
 
       {!status.view?
-        <TopBar stepEnabled={stepEnabled()} back={()=>{if(stepEnabled().back)stepMove('back')}} redo={()=>{if(stepEnabled().redo)stepMove('redo')}}/>
+        <TopBar editor={true} stepEnabled={stepEnabled()} back={()=>{if(stepEnabled().back)stepMove('back')}} redo={()=>{if(stepEnabled().redo)stepMove('redo')}}/>
       :
         <div style={{width:'100%',height:40}}/>
       }
+
+      {isMobile&&iconTooBig&&status.mode=='user'&&!status.view?
+        <div className='headImageWarningTextOuter' style={{top:70,opacity:1}}>
+          <div className='headImageWarningText' style={{backgroundColor:'rgba(200,200,200,0.6)'}}>圖片超出原來大小，可能會模糊</div>
+        </div>
+      :null}
       
       {currentImage()!=null?(
         <div id='editorWindow'>
@@ -645,17 +673,17 @@ function Editor() {
                     }
                   }}>
 
-                {!status.view?
+                {!status.view && !isTextLoading && !currentImage().textLoading?
                   <div class='editTextToggle' style={{width:60,height:30,fontSize:16,transform:`scale(${1/editorScale})`}}>
                     編輯
                   </div>
                 :null}
 
                 {isTextLoading||currentImage().textLoading?
-                  <div className='centerChildren' style={{pointerEvents:'none'}}>
-                    <div className={'textLoader'} style={{transform: `scale(${1/editorScale})`}}/>
+                  <div className='centerChildren' style={{pointerEvents:'none',transform:`scale(${0.4*1/editorScale})`}}>
+                    <div className={'textLoader'}/>
                   </div>
-                :null}
+                :null} 
 
                 </div>
               :null}

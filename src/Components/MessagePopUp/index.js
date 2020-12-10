@@ -25,7 +25,7 @@ const MessagePopUp = () => {
             if(overlay.confirm) overlay.confirm();
             else store.dispatch({type:'CLOSE_OVERLAY'});
           }}>
-          確定
+          {overlay.confirmText?overlay.confirmText:'確定'}
         </div>
 
         {overlay.cancel?
