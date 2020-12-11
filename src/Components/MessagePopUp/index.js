@@ -20,7 +20,7 @@ const MessagePopUp = () => {
       <div style={{fontSize:27,marginBottom:30}}>{overlay.message}</div>
 
       <div style={{display:'flex'}}>
-        <div className='borderBox overlayButton' 
+        <div className='clickable borderBox overlayButton' 
           onClick={()=>{
             if(overlay.confirm) overlay.confirm();
             else store.dispatch({type:'CLOSE_OVERLAY'});
@@ -29,7 +29,7 @@ const MessagePopUp = () => {
         </div>
 
         {overlay.cancel?
-          <div className='borderBox overlayButton' 
+          <div className='clickable borderBox overlayButton' 
             onClick={()=>{
               store.dispatch({type:'CLOSE_OVERLAY'});
             }}>

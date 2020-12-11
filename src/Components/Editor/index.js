@@ -439,7 +439,7 @@ function Editor() {
   }
 
   const headObject = (
-    <div id='headObject' className='object'
+    <div id='headObject' className='clickable object'
       style={{
         width:iconInfo.width,
         height:iconInfo.height,
@@ -525,7 +525,7 @@ function Editor() {
   const textObject = (
     <>
     {textInfo!=null? 
-    <div id='textObject' className='textObject object'
+    <div id='textObject' className='clickable textObject object'
       style={{
         width:textInfo.width,
         height:textInfo.height,
@@ -659,7 +659,7 @@ function Editor() {
               {status.mode=='admin'&&textInfo!=null? <>{textObject}</>:null}
 
               {status.mode=='user'&&currentImage().textInfo!=null?
-                <div className='textObject object' 
+                <div className='clickable textObject object' 
                   style={{
                     width:currentImage().textInfo.width,
                     height:currentImage().textInfo.height,
@@ -702,7 +702,7 @@ function Editor() {
             </div>
 
             {/* admin add text button */}
-            {status.mode=='admin'&&textInfo==null? <div className='addTextButton' style={{transform:`scale(${1/editorScale}`}} onClick={addNewText}>新增文字</div> :null}
+            {status.mode=='admin'&&textInfo==null? <div className='clickable addTextButton' style={{transform:`scale(${1/editorScale}`}} onClick={addNewText}>新增文字</div> :null}
         
           </div>
         </div>

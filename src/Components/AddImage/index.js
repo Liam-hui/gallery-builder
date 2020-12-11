@@ -105,11 +105,11 @@ function AddImage(props) {
 
   return (
     <div className={"actionContainer"+className}>
-      <label className='borderBox' for="add-image">上傳圖片</label>
+      <label className='clickable borderBox' for="add-image">上傳圖片</label>
       <input onChange={handleFileUpload} type="file" id="add-image" name="uploadPhotoInput" accept="image/*" multiple={status.mode=='admin'?true:false}/>
       
-      {status.mode=='user'&&!status.demo||status.mode=='admin'?<label className='borderBox' onClick={()=>save(0)}>儲存</label>:null}
-      {status.mode=='user'&&!status.demo?<label className='borderBox' onClick={()=>finish()}>完成</label>:null}
+      {status.mode=='user'&&!status.demo||status.mode=='admin'?<label className='clickable borderBox' onClick={()=>save(0)}>儲存</label>:null}
+      {status.mode=='user'&&!status.demo?<label className='clickable borderBox' onClick={()=>finish()}>完成</label>:null}
 
     </div>
   );

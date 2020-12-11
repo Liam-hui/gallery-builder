@@ -127,7 +127,7 @@ function Slider(props) {
           {!image.loading?(
           <>
 
-            <div className='sliderImage' style={{width:width*0.9,height:height*0.9}}>
+            <div className='clickable sliderImage' style={{width:width*0.9,height:height*0.9}}>
               <img src={image.url} draggable="false" style={{width:'100%',height:'100%'}} onClick={isMobile? ()=>{if(highlighted==image.id) setHighlighted(-1); else setHighlighted(image.id)}:()=>selectItem(image.id)} 
                 onMouseLeave={(e)=>{
                   if(e.relatedTarget.className!='sliderButtonClickArea' && e.relatedTarget.className!='chooseButtonClickArea') setHighlighted(-1);
@@ -139,7 +139,7 @@ function Slider(props) {
               :null}
               
               {canDelete&&!isMobile?(
-                <div className='sliderButtonClickArea' 
+                <div className='clickable sliderButtonClickArea' 
                   style={{top:-10,right:-10}}
                   onClick={()=>{deleteItem(image.id)}}
                 >
@@ -148,7 +148,7 @@ function Slider(props) {
               ):null}   
 
               {canDrag&&!isMobile?(
-                <div className='sliderButtonClickArea' draggable="false"
+                <div className='clickable sliderButtonClickArea' draggable="false"
                   style={{top:-10,left:-10}}
                   onMouseDown={(ev)=>handleDragStart(ev,image.id,image.order)}
                 >

@@ -19,12 +19,12 @@ export const AddIconPopUp = () => {
 
       {image==null?null:<div className='iconBig' style={{backgroundImage:'url('+image+')'}} />}
 
-      <div className="overlayCloseButton" onClick={()=>store.dispatch({type:'CLOSE_OVERLAY'})}>
+      <div className="clickable overlayCloseButton" onClick={()=>store.dispatch({type:'CLOSE_OVERLAY'})}>
         <Icon path={mdiCloseThick} style={{transform:`translate(0.5px,0.5px)`,pointerEvents:'none'}} size={0.9} color="black"/>   
       </div>
 
       <div style={{display:'flex'}}>
-        <div className='borderBox overlayButton' 
+        <div className='clickable borderBox overlayButton' 
           onClick={()=>{
             store.dispatch({type:'ADD_ICON_START'});
             store.dispatch({type:'CLOSE_OVERLAY'});
@@ -32,7 +32,7 @@ export const AddIconPopUp = () => {
           }}>
           使用原圖
         </div>
-        <div className='borderBox overlayButton'
+        <div className='clickable borderBox overlayButton'
           onClick={()=>{
             store.dispatch({type:'ADD_ICON_START'});
             store.dispatch({type:'CLOSE_OVERLAY'});

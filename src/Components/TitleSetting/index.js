@@ -244,7 +244,7 @@ function TitleSettingComponent(props) {
 
       <div style={inlineStyles.container}>
 
-        <div className='closeTextSetting' onClick={()=>{props.toggle(false);}}>
+        <div className='clickable closeTextSetting' onClick={()=>{props.toggle(false);}}>
           <Icon path={mdiCloseThick} style={{transform:`translate(0.5px,0.5px)`}} size={0.65} color="#DDDDDD"/>
         </div>
 
@@ -285,8 +285,8 @@ function TitleSettingComponent(props) {
             </div>
           :null}
 
-          <div style={inlineStyles.bottomSaveButton} onClick={saveTitle}>
-            <div className="bottomSaveButtonText">儲存</div>
+          <div className='clickable' style={inlineStyles.bottomSaveButton} onClick={saveTitle}>
+            <div className='bottomSaveButtonText'>儲存</div>
           </div>
 
         </div>
