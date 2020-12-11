@@ -158,12 +158,20 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  pointer-events: none;
+  /* pointer-events: none; */
   z-index: 9999;
 }
 
-.tools.enabled .editButton {
+.isDesktop .editButton {
+  pointer-events: none;
+}
+
+.isDesktop .tools.enabled .editButton {
   pointer-events: unset;
+}
+
+.isMobile .tools.enabled .editButton {
+  animation: delay-pointer-events 1s linear;
 }
 
 
@@ -202,7 +210,6 @@
   position: absolute;
   height:100%;
   width:100%;
-  /* border-color: rgba(140,140,140,0.7); */
   border-color: black;
   border-style: solid;
   box-sizing:border-box;
@@ -213,16 +220,10 @@
   display: flex;
   justify-content: center;
   align-items: center; 
-  pointer-events: none;
 }
 
 .tools.enabled {
   opacity: 1;
-  pointer-events: unset;
-}
-
-.isMobile .tools.enabled {
-  animation: delay-pointer-events 1s linear;
 }
 
 .editorBottom {

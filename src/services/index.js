@@ -287,7 +287,8 @@ function userUploadIcon(icon,original) {
     if (response.data.status==200) {
       let image = new Image();
       image.onload = function () {
-        store.dispatch({type:'ADD_ICON_SUCCESS',icon:{url:this.src,height:this.height,width:this.width,id:status().demo?Math.random().toString(36).substr(2, 9):response.data.data.img_uuid}});
+        console.log(convertDataURIToBlob(this.src));
+        store.dispatch({type:'ADD_ICON_SUCCESS',icon:{url:convertDataURIToBlob(this.src),height:this.height,width:this.width,id:status().demo?Math.random().toString(36).substr(2, 9):response.data.data.img_uuid}});
       };
       let img_base64 = response.data.data.img_base64;
       if(!img_base64.includes("data:image")) img_base64 = 'data:image/jpg;base64,'+img_base64;
@@ -436,4 +437,27 @@ function demoGetPhoto(product_id) {
     if(error&&error.response) console.log(error.response.data);
     // store.dispatch({type:'CLOSE_OVERLAY'});
   });
+}
+
+;
+
+function convertDataURIToBlob(dataURI) {
+  var BASE64_MARKER = ';base64,';
+
+  if(!dataURI) return;
+
+  // Convert image (in base64) to binary data
+  var base64Index = dataURI.indexOf(BASE64_MARKER) + BASE64_MARKER.length;
+  var base64 = dataURI.substring(base64Index);
+  var raw = window.atob(base64);
+  var rawLength = raw.length;
+  var array = new Uint8Array(new ArrayBuffer(rawLength));
+
+  for(let i = 0; i < rawLength; i++) {
+      array[i] = raw.charCodeAt(i);
+  }
+
+  let imageDataBlob = new Blob([array], {type: "image/jpeg"});
+
+  return URL.createObjectURL(imageDataBlob);
 }
