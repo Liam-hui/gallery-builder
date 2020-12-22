@@ -9,6 +9,7 @@
   padding: 0 20px 20px;
 }
 
+
 #editorWindow {
   animation: fadeIn 1s ease-in-out 0s;
   flex:1;
@@ -21,10 +22,13 @@
   justify-content: center;
 }
 
+.isMobile #editorWindow {
+  overflow: hidden;
+}
+
 #editorImage {
   animation: fadeIn 0.2s ease-in-out;
-  /* background-color:rgba(256,3,233,0.3); */
-  transition: background-image 0s ease-in 0.2s, width 0s linear 0.2s, height 0s linear 0.2s ;
+  transition: none;
   position: absolute;
   background-size: 100% 100%;
   background-repeat: no-repeat;
@@ -40,6 +44,10 @@
 
 #editorImage.changing {
   animation: fadeOut 0.2s ease-in-out;
+}
+
+#editorImage.zooming {
+  transition: transform 0.1s ease-in;
 }
 
 .object {
@@ -92,6 +100,7 @@
   position: absolute;
   right:0px;
   top:0px;
+  transform-origin: 100% 0%;
 }
 
 .headImageWarning {

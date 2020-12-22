@@ -19,7 +19,7 @@
   justify-content: center;
 }
 
-.isMobile .actionContainer.row label{
+.small .actionContainer.row label{
   font-size: 14px;
   width:unset;
   padding:0px 6px;

@@ -2,20 +2,13 @@
 .iconsListContainer {
   position: relative;
   display:flex;
-  flex-direction: column-reverse;
+  flex-direction: column;
   border-right: 1px solid black;
 }
 
-@media all and (min-width: 769px) {
-  .iconsListContainer {
-    /* background-color:red; */
-  }
-}
 
-@media all and (max-width: 768px){
-  .iconsListContainer {
-    flex-direction: column;
-  }
+.large .iconsListContainer {
+  flex-direction: column-reverse;
 }
 
 .iconWrapper {

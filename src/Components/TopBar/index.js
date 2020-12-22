@@ -6,16 +6,9 @@ import { useSelector } from "react-redux";
 import AddImage from '../../Components/AddImage';
 import Icon from '@mdi/react'
 import { mdiRedoVariant } from '@mdi/js';
-import { mdiCloseThick } from '@mdi/js';
 
 function TopBar(props) {
   const display = useSelector(state => state.display);
-  const status = useSelector(state => state.status);
-  
-  const handleCloseApp = () => {
-    if(status.demo||status.view)window.closeApp();
-    else store.dispatch({type:'SET_OVERLAY',mode:'message',message:'離開前請儲存所有更改',cancel:true,confirm:window.closeApp,confirmText:'離開'});
-  }
 
   return (
     <div className="topBarContainer">
@@ -36,8 +29,7 @@ function TopBar(props) {
       </>
       :null}
 
-      <div className="clickable closeApp" style={props.view?{marginLeft:'auto',marginRight:8}:{}} onClick={handleCloseApp}>
-        <Icon path={mdiCloseThick} size={1} color="black"/>
+      <div className="fakeCloseApp" style={props.view?{marginLeft:'auto',marginRight:8}:{}}>
       </div>
     </div>
   );

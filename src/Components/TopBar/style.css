@@ -21,11 +21,14 @@
   opacity: 0.6;
 }
 
-.closeApp {
+
+.fakeCloseApp{
+  width:24px;
+  height:24px;
   margin-left: auto;
 }
 
-.isMobile .closeApp {
+.small .fakeCloseApp {
   margin-left: 10px;
   margin-right: -10px;
 }

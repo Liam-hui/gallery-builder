@@ -1,5 +1,5 @@
 import './style.css';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef} from 'react';
 import { useSelector } from "react-redux";
 import store from '../../store';
 import {isMobile} from 'react-device-detect';
@@ -8,6 +8,8 @@ import {Services} from '../../services';
 import TopBar from '../../Components/TopBar';
 import Icon from '@mdi/react'
 import TitleSetting from '../../Components/TitleSetting';
+import { mdiMagnifyPlusOutline } from '@mdi/js';
+import { mdiMagnifyMinusOutline } from '@mdi/js';
 import { mdiExclamationThick } from '@mdi/js';
 import { mdiFlipHorizontal } from '@mdi/js';
 import { mdiDelete } from '@mdi/js';
@@ -21,6 +23,7 @@ const PLACEHOLDER_SIZE = 350;
 
 function Editor() {
 
+  const init = useSelector(state => state.init);
   const status = useSelector(state => state.status);
   const screen = useSelector(state => state.screen);
   const display = useSelector(state => state.display);
@@ -29,7 +32,11 @@ function Editor() {
   const imageSelected = useSelector(state => state.imageSelected);
   const icons = useSelector(state => state.icons);
 
-  const [editorScale,setEditorScale] = useState(1);
+  const [currentSelectedId,setCurrentSelectedId] = useState(-1);
+  const [editorScale,setEditorScale] = useState(null);
+  const [oldEditorScale,setOldEditorScale] = useState(1);
+  const [editorSize,setEditorSize] = useState(500);
+  const [zoomOffset,setZoomOffset] = useState({x:0,y:0});
   const [currentObject,setCurrentObject] = useState(null);
   const [frontObject,setFrontObject] = useState('headObject');
   const [iconInfo,setIconInfo] = useState({width:PLACEHOLDER_SIZE,height:PLACEHOLDER_SIZE,x:0,y:0,rot:0,scale:1,flip:false});
@@ -44,6 +51,7 @@ function Editor() {
   const [touchCount,setTouchCount] = useState(0);
 
   const [isEditing,setIsEditing] = useState(false);
+  const [isZooming,setIsZooming] = useState(false);
   const [isDragging,setIsDragging] = useState(false);
   const [isMoved,setIsMoved] = useState(false);
   const [isScaling,setIsScaling] = useState(false);
@@ -58,10 +66,9 @@ function Editor() {
       e.preventDefault();
   }, { passive: false });
 
-  const currentImage = () => {return imageSelected==-1? null:images.find(image => image.id == imageSelected)};
-  const currentImageIndex = imageSelected==-1? null:images.findIndex(image => image.id == imageSelected);
-  const currentIcon = imageSelected==-1 || (currentImage()&&currentImage().iconSelected==-1)? null:icons.find(icon=>icon.id==currentImage().iconSelected); 
-
+  const currentImage = currentSelectedId==-1? null:images.find(image => image.id == currentSelectedId);
+  const currentIcon = currentSelectedId==-1 || (currentImage!=null&&currentImage.iconSelected==-1)? null:icons.find(icon=>icon.id==currentImage.iconSelected); 
+  
   useEffect(() => {
     if(overlay.mode=='titleSetting') {
       setIsTextSetting(true)
@@ -70,7 +77,9 @@ function Editor() {
   }, [overlay]);
 
   useEffect(() => {
-    if(currentImageIndex==null&&images.length>0) {
+    if(overlay.mode=='loading'&&images.length==init.images&&!images.some(x=>x.loading||x.deleting)) store.dispatch({type:'CLOSE_OVERLAY'});
+
+    if(imageSelected==-1&&images.length>0) {
       if(images.find(image => image.order == 0) && !images.find(image => image.order == 0).loading) store.dispatch({type:'SELECT_IMAGE',id:images.find(image => image.order == 0).id});
     }
   }, [images]);
@@ -83,10 +92,7 @@ function Editor() {
     if(imageSelected!=-1) {
       setIsChanging(true);
       setTimeout(()=> {
-        setIsChanging(false);
-        updateImageSize();
-        updateEditorIconInfo();
-        updateEditorTextInfo();
+        setCurrentSelectedId(imageSelected);
       }, 200);
     }
     setIsTextSetting(false);
@@ -94,17 +100,26 @@ function Editor() {
   }, [imageSelected]);
 
   useEffect(() => {
+    if(currentSelectedId!=-1) {
+        updateImageSize();
+        setIsChanging(false);
+        updateEditorIconInfo();
+        updateEditorTextInfo();
+    }
+  }, [currentSelectedId]);
+
+  useEffect(() => {
     if(currentIcon!=null) {
       setIsEditing(false);
       updateEditorIconInfo();
     }
-    else if(imageSelected!=-1){
-      // store.dispatch({type:'UPDATE_STEP',step:null,id:imageSelected});
-    }
+    // else if(imageSelected!=-1){
+    //   // store.dispatch({type:'UPDATE_STEP',step:null,id:imageSelected});
+    // }
   }, [currentIcon]);
 
   useEffect(() => {
-    if(iconInfo.scale>1&&iconTooBig!=null&&!iconTooBig) {
+    if(iconInfo.scale>1&&iconTooBig!=null&&!iconTooBig&&currentObject=='headObject') {
       setIconTooBig(true);
       if(isMobile)setTimeout(()=> {
         setIconTooBig(null);
@@ -135,32 +150,34 @@ function Editor() {
   const updateEditorIconInfo = () => {
     let iconInfo = {};
     if (status.mode=='admin'){
-      saveStep(currentImage().iconInfo,'headObject',true);
-      setIconInfo(currentImage().iconInfo);
+      saveStep(currentImage.iconInfo,'headObject',true);
+      setIconInfo(currentImage.iconInfo);
     }
-    else if (status.mode=='user' && currentIcon!=null && !currentIcon.loading ) {
-      iconInfo = currentImage().iconInfo;
-      iconInfo.scale *= (currentImage().iconInfo.width/currentIcon.width + currentImage().iconInfo.height/currentIcon.height)*0.5;
-      iconInfo.width = currentIcon.width;
-      iconInfo.height = currentIcon.height;
-      iconInfo.flip = false;
-      saveStep(iconInfo,'headObject',true);
+    else if (status.mode=='user') {
+      iconInfo = currentImage.iconInfo;
+      if(currentIcon!=null && !currentIcon.loading){
+        iconInfo.scale *= (currentImage.iconInfo.width/currentIcon.width + currentImage.iconInfo.height/currentIcon.height)*0.5;
+        iconInfo.width = currentIcon.width;
+        iconInfo.height = currentIcon.height;
+        saveStep(iconInfo,'headObject',true);
+      }
       setIconInfo(iconInfo);
     }   
   }
 
   const updateEditorTextInfo = () => {
-    if(currentImage().textInfo!=null){
-      saveStep(currentImage().textInfo,'textObject',true);
+    if(currentImage.textInfo!=null){
+      saveStep(currentImage.textInfo,'textObject',true);
+      setTextInfo(currentImage.textInfo);
     }
-    setTextInfo(currentImage().textInfo);
+    else setTextInfo(null);
   }
 
   const addNewText = () => {
     if(textInfo==null){
       setIsTextLoading(true);
 
-      let TEXT_DISPLAY_WIDTH = screen.screenWidth>768? 350:150;
+      let TEXT_DISPLAY_WIDTH = display=='large'? 350:150;
       let TEXT_WIDTH = 2000;
       let TEXT_HEIGHT = 400;
       let textInfo = {
@@ -180,7 +197,7 @@ function Editor() {
       setIsEditing(true);
 
       Services.adminUpdatePhotos(
-        [currentImage()],
+        [currentImage],
         () => setTimeout(Services.titleToImage(imageSelected,"This is {**Customer_INPUT**}'s Album",()=>setIsTextLoading(false)),300),
         // Services.titleToImage(imageSelected,"This is {**Customer_INPUT**}'s Album"),
         '#000000'
@@ -193,28 +210,82 @@ function Editor() {
       let editorHeight = document.getElementById('editorWindow').clientHeight;
       let editorWidth = document.getElementById('editorWindow').clientWidth;
 
-      let ratio = currentImage().width / currentImage().height;
+      setEditorSize(Math.max(editorHeight,editorWidth));
+
+      let ratio = currentImage.width / currentImage.height;
       let editorRatio = editorWidth/editorHeight;
       let editorScale;
 
       if(ratio>editorRatio) {
-        editorScale = editorWidth/currentImage().width;
+        editorScale = editorWidth/currentImage.width;
       }
       else {
-        editorScale = editorHeight/currentImage().height;
+        editorScale = editorHeight/currentImage.height;
       }
 
+      setOldEditorScale(null);
+      setZoomOffset({x:0,y:0});
       setEditorScale(editorScale);
-      return editorScale;
+    }
+  }
+
+  //zoom
+  const zoom = (mode) => {
+    setIsZooming(true);
+    setTimeout(()=> {
+      setIsZooming(false);
+    }, 200);
+
+    let editorHeight = document.getElementById('editorWindow').clientHeight;
+    let editorWidth = document.getElementById('editorWindow').clientWidth;
+    let editorSize = Math.min(editorHeight,editorWidth);
+
+    let objectSize;
+    if(mode=='icon') objectSize = Math.hypot(iconInfo.width,iconInfo.height)*iconInfo.scale;
+    else if(mode=='text') objectSize = Math.hypot(textInfo.width,textInfo.height);
+
+    let editorScale_new = editorSize/objectSize*0.75;
+    let xMax = Math.abs(currentImage.width*0.5-editorWidth*0.5/editorScale_new);
+    let yMax = Math.abs(currentImage.height*0.5-editorHeight*0.5/editorScale_new);
+
+    let objectInfo;
+    if(mode=='icon') objectInfo = iconInfo;
+    else if(mode=='text') objectInfo = textInfo;
+
+    let x = currentImage.width*0.5-objectInfo.x;
+    if(x<0) x = Math.max(x,-xMax);
+    else if(x>0) x = Math.min(x,xMax);
+
+    let y = currentImage.height*0.5-objectInfo.y;
+    if(y<0) y = Math.max(y,-yMax);
+    else if(y>0) y = Math.min(y,yMax);
+
+    if(editorScale_new>editorScale) {
+      if(oldEditorScale==null) setOldEditorScale(editorScale);
+      setZoomOffset({x:x*editorScale_new,y:y*editorScale_new});
+      setEditorScale(editorScale_new);
+    }
+  }
+
+  const zoomReset = () => {
+    setIsZooming(true);
+    setTimeout(()=> {
+      setIsZooming(false);
+    }, 200);
+
+    if(oldEditorScale!=null) {
+      setZoomOffset({x:0,y:0});
+      setEditorScale(oldEditorScale);
+      setOldEditorScale(null);
     }
   }
   
   //step
   const stepEnabled = () => {
     if(status.mode=='user'&&currentIcon==null) return {back:false,redo:false};
-    else if(currentImage()!=null && currentImage().step!=null){
-      let back = currentImage()!=null && currentImage().step.store.length>2 && currentImage().step.current!=1;
-      let redo = currentImage()!=null && currentImage().step.store.length>currentImage().step.current+1;
+    else if(currentImage!=null && currentImage.step!=null){
+      let back = currentImage!=null && currentImage.step.store.length>2 && currentImage.step.current!=1;
+      let redo = currentImage!=null && currentImage.step.store.length>currentImage.step.current+1;
       return {back:back,redo:redo};
     }
     else return {back:false,redo:false}
@@ -228,8 +299,8 @@ function Editor() {
     if(object!=null){
       let step = {
         hey:'sdsdf',
-        current: currentImage().step.current,
-        store: currentImage().step.store.slice()
+        current: currentImage.step.current,
+        store: currentImage.step.store.slice()
       };
 
       if(step.store.find(x=>x.object==object).objectInfo===null){
@@ -246,7 +317,7 @@ function Editor() {
   }
 
   const stepMove = (mode) => {
-    let step = Object.assign({}, currentImage().step); 
+    let step = Object.assign({}, currentImage.step); 
     let object,newObjectInfo;
 
     if(mode=='back'){
@@ -309,10 +380,12 @@ function Editor() {
   }
 
   const handleScaleMove = (ev) => {
+    let minScale = 30;
+
     let x = ev.clientX - scaleStart.centerX;
     let y = ev.clientY - scaleStart.centerY; 
     let scale = scaleStart.scale*Math.hypot(x,y)/scaleStart.dist;
-    if (objectInfo.width*scale*editorScale < 60 || objectInfo.height*scale*editorScale < 60) scale = Math.max(60/objectInfo.width/editorScale,60/objectInfo.height/editorScale);  
+    if (objectInfo.width*scale*editorScale < minScale || objectInfo.height*scale*editorScale < minScale) scale = Math.max(minScale/objectInfo.width/editorScale,minScale/objectInfo.height/editorScale);  
     let rot = scaleStart.rotation + (Math.atan2(y,  x) / Math.PI * 180 - scaleStart.angle);
     setInfo({...objectInfo,  ...{rot:rot,scale:scale} });
     setIsMoved(true);
@@ -363,7 +436,6 @@ function Editor() {
   } 
 
   const handleTouchStart = (e) => {
-    console.log(e.target);
     if(isEditing){
       if(e.targetTouches.length==2){
         handleDragTwoFinger(e,true);
@@ -444,9 +516,9 @@ function Editor() {
 
       <div id='headObject' className='clickable object'
         style={{
-          width:iconInfo.width,
-          height:iconInfo.height,
-          transform: `translate(${iconInfo.x-iconInfo.width*0.5}px, ${iconInfo.y-iconInfo.height*0.5}px) rotate(${iconInfo.rot}deg) scale(${iconInfo.scale})`,
+          width:iconInfo.width*editorScale,
+          height:iconInfo.height*editorScale,
+          transform: `translate(${(iconInfo.x-iconInfo.width*0.5)*editorScale}px, ${(iconInfo.y-iconInfo.height*0.5)*editorScale}px) rotate(${iconInfo.rot}deg) scale(${iconInfo.scale})`,
           zIndex: frontObject=='headObject'? 99:0,
           pointerEvents:'none',
         }}
@@ -455,17 +527,18 @@ function Editor() {
           style={status.mode=='admin'||currentIcon==null?{}:{transform: `scaleX(${iconInfo.flip?-1:1})`}}
         >
           <img src={status.mode=='admin'||currentIcon==null?placeHolderImage:currentIcon.url} />
-          {status.mode=='admin'? <p style={{zIndex:5,fontSize:iconInfo.width*0.1}}>移動此圖示</p>:null}
+          {status.mode=='admin'? <p style={{zIndex:5,fontSize:iconInfo.width*editorScale*0.1}}>移動此圖示</p>:null}
         </div>
       </div>
 
 
-      <div id='headObjectTool' className={isEditing&&currentObject=='headObject'?'tools enabled':'tools'} 
+    {!status.view?
+      <div id='headObjectTool' className={isEditing&&currentObject=='headObject'?'tools enabled clickable':'tools'} 
         style={{
-          width:300,
-          height:300*iconInfo.height/iconInfo.width,
-          transform: `translate(${iconInfo.x-300*0.5}px, ${iconInfo.y-300*iconInfo.height/iconInfo.width*0.5}px) rotate(${iconInfo.rot}deg) scale(${iconInfo.width*iconInfo.scale/300})`,
-          borderWidth:2/editorScale/(iconInfo.width*iconInfo.scale/300),
+          width:editorSize,
+          height:editorSize*iconInfo.height/iconInfo.width,
+          transform: `translate(${(iconInfo.x*editorScale-editorSize*0.5)}px, ${(iconInfo.y*editorScale-editorSize*iconInfo.height/iconInfo.width*0.5)}px) rotate(${iconInfo.rot}deg) scale(${iconInfo.width*iconInfo.scale/editorSize*editorScale})`,
+          borderWidth:2/(iconInfo.width*iconInfo.scale/editorSize*editorScale),
           zIndex: frontObject=='headObject'? 99:0,
         }}
         onMouseOver={()=>{
@@ -488,17 +561,18 @@ function Editor() {
           onMouseDown={isMobile?null:(e)=>handleDragStart(e.nativeEvent)}
         />
         <div className="editButton topRightButton" data-type="scale" draggable="false" 
-          style={{transform: `scale(${1/editorScale/(iconInfo.width*iconInfo.scale/300)})`}}
+          style={{transform: `scale(${1/(iconInfo.width*iconInfo.scale/editorSize*editorScale)})`}}
           onMouseDown={isMobile?null:(e)=>handleScaleStart(e.nativeEvent)}
         >
           <div className="editButtonInner" style={{pointerEvents:'none'}}>
             <Icon path={mdiRotateLeft} size={1} color="white"/>
           </div>
         </div>
+
         {status.mode=='user'?(
           <>
             <div className="editButton bottomLeftButton" id='flipButton' draggable="false" 
-              style={{transform: `scale(${1/editorScale/(iconInfo.width*iconInfo.scale/300)})`}}
+              style={{transform: `scale(${1/(iconInfo.width*iconInfo.scale/editorSize*editorScale)})`}}
               onClick={isEditing?handleFlip:null}
             >
               <div className="editButtonInner">
@@ -507,7 +581,7 @@ function Editor() {
             </div>
 
             <div className="editButton bottomRightButton" draggable="false" 
-              style={{transform: `scale(${1/editorScale/(iconInfo.width*iconInfo.scale/300)})`}}
+              style={{transform: `scale(${1/(iconInfo.width*iconInfo.scale/editorSize*editorScale)})`}}
               onClick={isEditing?()=>store.dispatch({type:'UNSELECT_ICON',id:imageSelected}):null}
             >
               <div className="editButtonInner" style={{pointerEvents:'none'}}>
@@ -516,24 +590,30 @@ function Editor() {
             </div>
           </>
         ):null}
+
+
+        {(iconTooBig||iconTooBig==null)&&status.mode=='user'&&!status.view?(
+        <>
+          <div className="headImageWarningContainer" style={{width: 40,height: 40,padding: 7,transform: `scale(${1/(iconInfo.width*iconInfo.scale/editorSize*editorScale)})`}}>
+            <div className='headImageWarning' style={{borderRadius: 6}}>
+              <Icon path={mdiExclamationThick} size={1.2} color="white"/>
+            </div>
+
+          {!isMobile?
+            <div className='headImageWarningTextOuter' style={{left:20,top:50}}>
+              <div className='headImageWarningText'>圖片超出原來大小，可能會模糊</div>
+            </div>
+          :null}
+
+          </div>
+        </>
+      ):(null)}
+
       </div>
 
-      {/* {(iconTooBig||iconTooBig==null)&&status.mode=='user'&&!status.view?(
-        <>
-        <div className="headImageWarningContainer" style={{width: 40/iconInfo.scale/editorScale,height: 40/iconInfo.scale/editorScale,padding: 17/iconInfo.scale/editorScale}}>
-          <div className='headImageWarning' style={{borderRadius: 6/iconInfo.scale/editorScale}}>
-            <Icon path={mdiExclamationThick} size={1.2/iconInfo.scale/editorScale} color="white"/>
-          </div>
+      :null}
 
-        {!isMobile?
-          <div className='headImageWarningTextOuter' style={{left:20/iconInfo.scale/editorScale,top:60/iconInfo.scale/editorScale,transform: `scale(${1/iconInfo.scale/editorScale})`}}>
-            <div className='headImageWarningText'>圖片超出原來大小，可能會模糊</div>
-          </div>
-        :null}
-
-        </div>
-        </>
-      ):(null)} */}
+      
 
 
     </div>
@@ -544,11 +624,11 @@ function Editor() {
     {textInfo!=null? 
     <div id='textObject' className='clickable textObject object'
       style={{
-        width:textInfo.width,
-        height:textInfo.height,
-        transform: `translate(${textInfo.x-textInfo.width*0.5}px, ${textInfo.y-textInfo.height*0.5}px) rotate(${textInfo.rot}deg) scale(${textInfo.scale})`,
+        width:textInfo.width*editorScale,
+        height:textInfo.height*editorScale,
+        transform: `translate(${(textInfo.x-textInfo.width*0.5)*editorScale}px, ${(textInfo.y-textInfo.height*0.5)*editorScale}px) rotate(${textInfo.rot}deg) scale(${textInfo.scale})`,
         zIndex: frontObject=='textObject'? 99:0,
-        backgroundImage: currentImage()==null||currentImage().textImage==null? 'none': 'url('+currentImage().textImage.url+')',
+        backgroundImage: currentImage==null||currentImage.textImage==null? 'none': 'url('+currentImage.textImage.url+')',
       }}
       onMouseOver={()=>{
         if(!isDragging&&!isScaling&&!isScalingText&&!isTwoFingerDragging){
@@ -566,15 +646,15 @@ function Editor() {
     >
       <div className='textBox' style={{backgroundColor: isEditing&&frontObject=='textObject'? 'rgba(0,0,0,0.3)':'unset'}}>
   
-        <div id='textObjectTool' className={(isEditing&&currentObject=='textObject')?'tools enabled ':'tools'} style={{borderWidth:2/textInfo.scale/editorScale}}>
+        <div id='textObjectTool' className={(isEditing&&currentObject=='textObject')?'tools enabled ':'tools'} style={{borderWidth:2/textInfo.scale}}>
          
           <div class='dragClickArea' draggable="false" 
             style={{position:'absolute',width:'100%',height:'100%'}} 
             onMouseDown={isMobile?null:(e)=>handleDragStart(e.nativeEvent)}
           />
           
-          <div class={isTextSetting||isTextLoading||currentImage().textLoading?'editTextToggle hidden':'editTextToggle'}
-           style={{transform: `scale(${1/textInfo.scale/editorScale})`}}
+          <div class={isTextSetting||isTextLoading||currentImage.textLoading?'editTextToggle hidden':'editTextToggle'}
+           style={{transform: `scale(${1/textInfo.scale})`}}
             // style={{...{transform: `scale(${1/textInfo.scale/editorScale})`},...isDragging||isTwoFingerDragging?{pointerEvents:'none'}:{}}}
             onClick={()=>{
               if(isMobile)store.dispatch({type:'SET_OVERLAY',mode:'titleSetting'});
@@ -585,7 +665,7 @@ function Editor() {
           </div>
 
           <div className="editButton topRightButton" data-type="scale" draggable="false" 
-            style={{transform: `scale(${1/textInfo.scale/editorScale})`}}
+            style={{transform: `scale(${1/textInfo.scale})`}}
             onMouseDown={isMobile?null:(e)=>handleScaleStart(e.nativeEvent)}
           >
             <div className="editButtonInner" style={{pointerEvents:'none'}} >
@@ -594,7 +674,7 @@ function Editor() {
           </div>
 
           <div className="editButton bottomLeftButton" draggable="false" 
-              style={{transform: `scale(${1/textInfo.scale/editorScale})`}}
+              style={{transform: `scale(${1/textInfo.scale})`}}
               onClick={isEditing?()=>{store.dispatch({type:'REMOVE_TEXT',id:imageSelected});setTextInfo(null);setIsTextSetting(false)}:null}
             >
               <div className="editButtonInner" style={{pointerEvents:'none'}}>
@@ -603,7 +683,7 @@ function Editor() {
             </div>
 
           <div className="editButton bottomRightButton" data-type="scaleText" draggable="false" 
-            style={{transform: `scale(${1/textInfo.scale/editorScale})`}}
+            style={{transform: `scale(${1/textInfo.scale})`}}
             onMouseDown={isMobile?null:(e)=>handleScaleTextStart(e.nativeEvent)}
           >
             <div className="editButtonInner" style={{pointerEvents:'none'}}>
@@ -613,8 +693,8 @@ function Editor() {
             
         </div>
 
-        {isTextLoading||currentImage().textLoading?
-            <div className='centerChildren' style={{pointerEvents:'none',transform:`scale(${0.4*1/textInfo.scale/editorScale})`}}>
+        {isTextLoading||currentImage.textLoading?
+            <div className='centerChildren' style={{pointerEvents:'none',transform:`scale(${0.4/textInfo.scale})`}}>
               <div className={'textLoader'}/>
             </div>
           :null} 
@@ -632,11 +712,11 @@ function Editor() {
 
   return (
     <div id="editorContainer" style={{"--button-size":isMobile?'40px':'30px'}}
-      onMouseMove={!isMobile&&mouseMove? (e)=>mouseMove(e.nativeEvent):null} 
-      onTouchMove={isMobile?handleTouchMove:null} 
-      onMouseUp={isMobile?null:handleEnd}
-      onTouchStart={isMobile?handleTouchStart:null}
-      onTouchEnd={isMobile?handleEnd:null} 
+      onMouseMove={!status.view&&!isMobile&&mouseMove? (e)=>mouseMove(e.nativeEvent):null} 
+      onTouchMove={!status.view&&isMobile?handleTouchMove:null} 
+      onMouseUp={!status.view&&isMobile?null:handleEnd}
+      onTouchStart={!status.view&&isMobile?handleTouchStart:null}
+      onTouchEnd={!status.view&&isMobile?handleEnd:null} 
     >
 
       {status.mode=='admin'&&overlay==null? 
@@ -649,21 +729,34 @@ function Editor() {
         <div style={{width:'100%',height:40}}/>
       }
 
+      {isMobile&&status.mode=='user'&&!status.view?
+        <div style={{width:'100%',height:40,display:'flex',flexDirection:'row'}}>
+          {oldEditorScale==null?
+            <div style={{display:'flex',flexDirection:'row',marginLeft:'auto'}}>
+              {currentIcon!=null?
+                <Icon onClick={()=>zoom('icon')} path={mdiMagnifyPlusOutline} size={1.8} style={{marginLeft:5}} color="grey"/>
+              :null}
+            </div>
+          :<Icon onClick={zoomReset} path={mdiMagnifyMinusOutline} size={1.8} style={{marginLeft:'auto'}} color="grey"/>
+          }
+        </div>
+      :null}
+
       {isMobile&&iconTooBig&&status.mode=='user'&&!status.view?
         <div className='headImageWarningTextOuter' style={{top:70,opacity:1}}>
           <div className='headImageWarningText' style={{backgroundColor:'rgba(200,200,200,0.6)'}}>圖片超出原來大小，可能會模糊</div>
         </div>
       :null}
       
-      {currentImage()!=null?(
+      {currentImage!=null?(
         <div id='editorWindow'>
-          <div id='editorImage' className={isChanging?'changing':null} style={{backgroundImage:'url('+currentImage().url+')',width:currentImage().width,height:currentImage().height,transform: `scale(${editorScale})`}}>
+          <div id='editorImage' className={isChanging?'changing': isZooming?'zooming':'' } style={{backgroundImage:'url('+currentImage.url+')',width:currentImage.width*editorScale,height:currentImage.height*editorScale,transform: `translate(${zoomOffset.x}px, ${zoomOffset.y}px)`}}>
             
             {/* text setting */}
             {textInfo!=null && !isMobile?
               <div className={isTextSetting?'textSetting object':'textSetting object hidden'}
                 style={{
-                  transform: `translate(${textInfo.x}px, ${textInfo.y}px) scale(${1/editorScale})`,     
+                  transform: `translate(${textInfo.x*editorScale}px, ${textInfo.y*editorScale}px)`,     
                 }}
               >
                 <TitleSetting on={isTextSetting} toggle={setIsTextSetting}/>
@@ -675,13 +768,13 @@ function Editor() {
               {/* text */}
               {status.mode=='admin'&&textInfo!=null? <>{textObject}</>:null}
 
-              {status.mode=='user'&&currentImage().textInfo!=null?
-                <div className='clickable textObject object' 
+              {status.mode=='user'&&currentImage.textInfo!=null?
+                <div className={status.view?'textObject object':'clickable textObject object'}
                   style={{
-                    width:currentImage().textInfo.width,
-                    height:currentImage().textInfo.height,
-                    transform: `translate(${currentImage().textInfo.x-currentImage().textInfo.width*0.5}px, ${currentImage().textInfo.y-currentImage().textInfo.height*0.5}px) rotate(${currentImage().textInfo.rot}deg)`,
-                    backgroundImage: currentImage()==null||currentImage().textInfo==null||currentImage().textImage==null? 'none': 'url('+currentImage().textImage.url+')',
+                    width:currentImage.textInfo.width*editorScale,
+                    height:currentImage.textInfo.height*editorScale,
+                    transform: `translate(${currentImage.textInfo.x*editorScale-currentImage.textInfo.width*0.5*editorScale}px, ${currentImage.textInfo.y*editorScale-currentImage.textInfo.height*0.5*editorScale}px) rotate(${currentImage.textInfo.rot}deg)`,
+                    backgroundImage: currentImage==null||currentImage.textInfo==null||currentImage.textImage==null? 'none': 'url('+currentImage.textImage.url+')',
                   }}
                   onClick={()=>{
                     if(!status.view){
@@ -690,14 +783,14 @@ function Editor() {
                     }
                   }}>
 
-                {!status.view && !isTextLoading && !currentImage().textLoading?
-                  <div class='editTextToggle' style={{width:60,height:30,fontSize:16,transform:`scale(${1/editorScale})`}}>
+                {!status.view && !isTextLoading && !currentImage.textLoading?
+                  <div class='editTextToggle' style={{width:60,height:30,fontSize:16}}>
                     編輯
                   </div>
                 :null}
 
-                {isTextLoading||currentImage().textLoading?
-                  <div className='centerChildren' style={{pointerEvents:'none',transform:`scale(${0.4*1/editorScale})`}}>
+                {isTextLoading||currentImage.textLoading?
+                  <div className='centerChildren' style={{pointerEvents:'none',transform:`scale(${0.4})`}}>
                     <div className={'textLoader'}/>
                   </div>
                 :null} 
@@ -706,20 +799,20 @@ function Editor() {
               :null}
 
               {/* head */}
-              {status.mode=='admin' || (currentImage().iconSelected!=undefined && currentImage().iconSelected!=-1)? (
+              {status.mode=='admin' || (currentImage.iconSelected!=undefined && currentImage.iconSelected!=-1)? (
                 <>{headObject}</>
               ):(
-                <div className={currentImage().iconSelected && currentImage().iconSelected!=-1? 'headImage hidden' : 'headImage'} 
-                  style={{backgroundImage:`url(${placeHolderImage})`,width:PLACEHOLDER_SIZE,height:PLACEHOLDER_SIZE,transform: `translate(${currentImage().iconInfo.x-PLACEHOLDER_SIZE*0.5}px, ${currentImage().iconInfo.y-PLACEHOLDER_SIZE*0.5}px) rotate(${currentImage().iconInfo.rot}deg) scale(${currentImage().iconInfo.size[0]/PLACEHOLDER_SIZE})`}}
+                <div className={'headImage'} 
+                  style={{backgroundImage:`url(${placeHolderImage})`,width:PLACEHOLDER_SIZE*editorScale,height:PLACEHOLDER_SIZE*editorScale,transform: `translate(${(iconInfo.x-PLACEHOLDER_SIZE*0.5)*editorScale}px, ${(iconInfo.y-PLACEHOLDER_SIZE*0.5)*editorScale}px) rotate(${iconInfo.rot}deg) scale(${Math.max(iconInfo.width,iconInfo.height)*iconInfo.scale/PLACEHOLDER_SIZE})`}}
                 >
-                  <p style={{fontSize:currentImage().iconInfo.size[0]*0.1,transform:`scale(${1/(currentImage().iconInfo.size[0]/PLACEHOLDER_SIZE)})`}}>請選擇頭像</p>
+                  <p style={{fontSize:PLACEHOLDER_SIZE*editorScale*0.1}}>請選擇頭像</p>
                 </div>
               )}
 
             </div>
 
             {/* admin add text button */}
-            {status.mode=='admin'&&textInfo==null? <div className='clickable addTextButton' style={{transform:`scale(${1/editorScale}`}} onClick={addNewText}>新增文字</div> :null}
+            {status.mode=='admin'&&textInfo==null? <div className='clickable addTextButton' onClick={addNewText}>新增文字</div> :null}
         
           </div>
         </div>
@@ -728,15 +821,15 @@ function Editor() {
         )
       }
 
-      {status.mode=='user'&&!status.demo&&!status.view&&display!='large'? (
+      {currentImage&&status.mode=='user'&&!status.demo&&!status.view&&display!='large'? (
         <div className='editorBottom'>
-          <div className={currentImageIndex>0?'pageArrow':'pageArrow disabled'} onClick={() => {if(currentImageIndex>0){store.dispatch({type:'SELECT_IMAGE',id:images[currentImageIndex-1].id});}}}>
+          <div className={currentImage.order>0?'pageArrow':'pageArrow disabled'} onClick={() => {if(currentImage.order>0){store.dispatch({type:'SELECT_IMAGE',id:images.find(image => image.order == currentImage.order-1).id});}}}>
             <Icon path={mdiArrowLeftBold} size={0.8} rotate={0} color="#DDDDDD" style={{transform:`translate(0px,0.5px)`}}/>
           </div>
 
-          <div className='pageNumber borderBox'>第 {currentImageIndex+1} 張</div>
+          <div className='pageNumber borderBox'>第 {currentImage.order+1} 張</div>
           
-          <div className={currentImageIndex<images.length-1?'pageArrow':'pageArrow disabled'} onClick={() => {if(currentImageIndex<images.length-1){store.dispatch({type:'SELECT_IMAGE',id:images[currentImageIndex+1].id});}}}>
+          <div className={currentImage.order<images.length-1?'pageArrow':'pageArrow disabled'} onClick={() => {if(currentImage.order<images.length-1){store.dispatch({type:'SELECT_IMAGE',id:images.find(image => image.order == currentImage.order+1).id});}}}>
             <Icon path={mdiArrowLeftBold} size={0.8} color="#DDDDDD" style={{transform:`translate(0px,0.5px) rotate(180deg)`}}/>
           </div>
         </div>

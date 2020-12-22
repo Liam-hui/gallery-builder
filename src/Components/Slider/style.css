@@ -171,17 +171,15 @@
 }
 
 .statusWrapperBox {
-  background-color: rgba(255,255,255,0.3);
+  background-color: rgba(255,255,255,0);
+  color: #CCCCCC;
   padding:5px;
   border-radius: 8px;
-  color: #333333;
 }
 
-@media all and (max-width: 768px) {
-  .statusWrapperBox {
-    background-color: rgba(255,255,255,0);
-    color: #CCCCCC;
-  }
+.large .statusWrapperBox {
+  background-color: rgba(255,255,255,0.3);
+  color: #333333;
 }
 
 .chooseButtonWrapper {

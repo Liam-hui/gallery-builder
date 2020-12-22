@@ -15,6 +15,7 @@ function Slider(props) {
 
   const status = useSelector(state => state.status);
   const screen = useSelector(state => state.screen);
+  const display = useSelector(state => state.display);
   const sliderLock = useSelector(state => state.sliderLock);
 
   const [draggingId,setDraggingId] = useState(null);
@@ -31,7 +32,7 @@ function Slider(props) {
   }, [images]);
 
   let WIDTH,HEIGHT;
-  if(screen.screenWidth>768 || screen.screenHeight>768) {
+  if(display=='large') {
     if(vertical) {WIDTH=150;HEIGHT=100;}
     else {WIDTH=200;HEIGHT=100;}
   }

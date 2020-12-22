@@ -16,6 +16,9 @@ import TopBar from './Components/TopBar';
 import MessagePopUp from './Components/MessagePopUp';
 import {AddIconPopUp} from './Components/AddIconPopUp';
 
+import Icon from '@mdi/react'
+import { mdiCloseThick } from '@mdi/js';
+
 function App() {
 
   const overlay = useSelector(state => state.overlay);
@@ -67,18 +70,20 @@ function App() {
     store.dispatch({type:'SET_SCREEN',screenWidth:window.innerWidth,screenHeight:window.innerHeight,orientation:window.matchMedia("(orientation: portrait)")? 'landscape':'portrait'});
     
     let display;
-    if(window.innerWidth>768||window.innerHeight>768) display = 'large';
+    if(Math.min(window.innerWidth,window.innerHeight)>600) display = 'large';
     else if(window.innerHeight>=window.innerWidth) display = 'smallPort';
     else display = 'smallLand';
     store.dispatch({type:'SET_DISPLAY',display:display});
+
   }
 
   let className = '';
   if(isMobile) className += ' isMobile'; else className += ' isDesktop';
   className += ( ' ' + display);
+  if(display!='large') className += ' small';
 
   return (
-    <div className={"appContainer"+className} style={{height:screen.screenHeight}}>
+    <div className={"appContainer"+className}>
 
 
       {status.mode=='user' && !status.demo && !status.view ?
@@ -129,7 +134,7 @@ function App() {
     
             <Editor/>
 
-            <TopBar view={true} />
+            {/* <TopBar view={true} /> */}
           </div>
         </>
       :null}
@@ -180,6 +185,15 @@ function App() {
 
         </div>
       :null}
+
+      <div className="clickable closeApp" style={status.view?{marginLeft:'auto',marginRight:8}:{}} 
+        onClick={ ()=>{
+            if(status.demo||status.view)window.closeApp();
+            else store.dispatch({type:'SET_OVERLAY',mode:'message',message:'離開前請儲存所有更改',cancel:true,confirm:window.closeApp,confirmText:'離開'});
+          }}
+      >
+        <Icon path={mdiCloseThick} size={1} color="black"/>
+      </div>
 
     </div>
 

@@ -22,7 +22,9 @@ function adminGetAlbumPhotos(product_id) {
   })
   .then(async (response) => {
     console.log(response.data.data);
-    store.dispatch({type:'CLOSE_OVERLAY'});
+    // store.dispatch({type:'CLOSE_OVERLAY'});
+    if(Object.entries(response.data.data).length==0) store.dispatch({type:'CLOSE_OVERLAY'});
+    else store.dispatch({type:'INIT_IMAGES',count:Object.entries(response.data.data).length});
     for (const [id, photo] of Object.entries(response.data.data)) {
       let temp_id = Math.random().toString(36).substr(2, 9);
       if(photo.sequence>-1){
@@ -202,8 +204,10 @@ function userGetPhotos(order_id,product_id) {
   api.get('album/customer/customerCurrentEditing/'+order_id,{
   })
   .then(async(response) => {
+    console.log('hereee');
     console.log(response.data.data);
-    store.dispatch({type:'CLOSE_OVERLAY'});
+    // store.dispatch({type:'CLOSE_OVERLAY'});
+    store.dispatch({type:'INIT_IMAGES',count:Object.entries(response.data.data.photo_details[product_id]).length});
     for (const [id, photo] of Object.entries(response.data.data.photo_details[product_id])) {
 
       let textInfo = null;
@@ -227,6 +231,7 @@ function userGetPhotos(order_id,product_id) {
         x: parseFloat(photo.details.position[0]),
         y: parseFloat(photo.details.position[1]),
         rot: parseFloat(photo.details.rotate),
+        flip: parseFloat(photo.details.flip)==1?true:false,
         scale:1,
       }
 
@@ -238,7 +243,6 @@ function userGetPhotos(order_id,product_id) {
         
         if(photo.details.photo!=null) {
           let getPhotoBase64 = await api.get('album/getPhotoBase64/customer/'+photo.details.photo);
-          console.log(getPhotoBase64.data);
           let img_base64 = getPhotoBase64.data.data;
           if(!img_base64.includes("data:image")) img_base64 = 'data:image/jpg;base64,'+img_base64;
           userSelectIcon(img_base64,photo.details.photo,id);
@@ -251,10 +255,11 @@ function userGetPhotos(order_id,product_id) {
           store.dispatch({type: 'ADD_TITLE_IMAGE',id:id,image:{url:img_base64,id:photo.details.title.title}});
         }
         else if(photo.admin_title!=null&&photo.admin_title!='') titleToImage(id,photo.admin_title);
-    
+
       };
 
       let getPhotoBase64 = await api.get('album/getPhotoBase64/base/'+id);
+      console.log(id);
       let img_base64 = getPhotoBase64.data.data;
       image.src = img_base64;
     }
@@ -315,6 +320,7 @@ function userUpdatePhotos(photos,confirm) {
             "position":[photo.iconInfo.x,photo.iconInfo.y],
             "size":[photo.iconInfo.height*photo.iconInfo.scale,photo.iconInfo.width*photo.iconInfo.scale],
             "rotate":photo.iconInfo.rot,
+            "flip":photo.iconInfo.flip?1:0,
         };
       }
 
@@ -330,11 +336,14 @@ function userUpdatePhotos(photos,confirm) {
     "photo_details": photoDetails,
   }
 
+  console.log(body);
+
   api.post('album/customerUpdatePhoto', body,{
   })
   .then((response) => {
     console.log(response.data);
-    store.dispatch({type:'SET_OVERLAY',mode:'message',message:response.data.message,cancel:true});
+    if(confirm)store.dispatch({type:'SET_OVERLAY',mode:'message',message:response.data.message,confirm:window.closeApp});
+    else store.dispatch({type:'SET_OVERLAY',mode:'message',message:response.data.message,cancel:true});
   }, (error) => {
     if(error&&error.response) console.log(error.response.data);
     store.dispatch({type:'SET_OVERLAY',mode:'message',message:error.response.data.message});
@@ -438,8 +447,6 @@ function demoGetPhoto(product_id) {
     // store.dispatch({type:'CLOSE_OVERLAY'});
   });
 }
-
-;
 
 function convertDataURIToBlob(dataURI) {
   var BASE64_MARKER = ';base64,';
