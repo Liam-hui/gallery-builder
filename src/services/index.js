@@ -15,6 +15,7 @@ export const Services = {
   titleToImage,
   realText,
   demoGetPhoto,
+  userUpdateAllTitle,
 };
 
 function adminGetAlbumPhotos(product_id) {
@@ -50,6 +51,7 @@ function adminGetAlbumPhotos(product_id) {
             y:parseFloat(photo.details.title.position[1]),
             rot:parseFloat(photo.details.title.rotate),
             color:photo.details.title.color,
+            align:photo.details.title.align,
           }
         }
 
@@ -157,7 +159,7 @@ function adminUpdatePhotoOrder(photo_id,newOrder,product_id) {
   });
 }
 
-function adminUpdatePhotos(photos,after,color,save) {
+function adminUpdatePhotos(photos,after,text,save) {
   let body = new FormData();
   body.append('product', status().product_id);
 
@@ -179,10 +181,15 @@ function adminUpdatePhotos(photos,after,color,save) {
       body.append(`photos[${index}][photo_details][title][size][0]`, photo.textInfo.height*photo.textInfo.scale);
       body.append(`photos[${index}][photo_details][title][size][1]`, photo.textInfo.width*photo.textInfo.scale);
       body.append(`photos[${index}][photo_details][title][rotate]`, photo.textInfo.rot);
-      if(color) {
-        body.append(`photos[${index}][photo_details][title][color]`, color);
-        store.dispatch({type:'UPDATE_COLOR',id:photo.id,color:color});
+      if(text&&text.color) {
+        body.append(`photos[${index}][photo_details][title][color]`, text.color);
+        store.dispatch({type:'UPDATE_COLOR',id:photo.id,color:text.color});
       }
+      if(text&&text.align) {
+        body.append(`photos[${index}][photo_details][title][align]`, text.align);
+        store.dispatch({type:'UPDATE_ALIGN',id:photo.id,align:text.align});
+      }
+      else body.append(`photos[${index}][photo_details][title][align]`, photo.textInfo.align);
     }
 
   });
@@ -204,7 +211,6 @@ function userGetPhotos(order_id,product_id) {
   api.get('album/customer/customerCurrentEditing/'+order_id,{
   })
   .then(async(response) => {
-    console.log('hereee');
     console.log(response.data.data);
     // store.dispatch({type:'CLOSE_OVERLAY'});
     store.dispatch({type:'INIT_IMAGES',count:Object.entries(response.data.data.photo_details[product_id]).length});
@@ -213,6 +219,7 @@ function userGetPhotos(order_id,product_id) {
       let textInfo = null;
       if(photo.details.title!=null){
         textInfo = {
+          align:photo.details.title.align,
           adminTitle:photo.admin_title,
           title:photo.details.title.title,
           height:parseFloat(photo.details.title.size[0]),
@@ -267,6 +274,16 @@ function userGetPhotos(order_id,product_id) {
     if(error&&error.response) console.log(error.response.data);
     store.dispatch({type:'CLOSE_OVERLAY'});
   });
+}
+
+function userUpdateAllTitle(title){
+  const photos = store.getState().images;
+  photos.forEach(photo=>{
+    if(photo.textInfo) {
+      store.dispatch({type:'TITLE_IMAGE_LOADING',id:photo.id});
+      titleToImage(photo.id,realText(photo.textInfo.adminTitle,title));
+    }
+  })
 }
 
 function userSelectIcon(icon_base64,icon_id,photo_id){

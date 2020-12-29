@@ -1,5 +1,5 @@
 import './style.css';
-import React, { useState, useEffect, useRef} from 'react';
+import React, { useState, useEffect, useCallback, useRef} from 'react';
 import { useSelector } from "react-redux";
 import store from '../../store';
 import {isMobile} from 'react-device-detect';
@@ -38,7 +38,7 @@ function Editor() {
   const [editorSize,setEditorSize] = useState(500);
   const [zoomOffset,setZoomOffset] = useState({x:0,y:0});
   const [currentObject,setCurrentObject] = useState(null);
-  const [frontObject,setFrontObject] = useState('headObject');
+  const [frontObject,setFrontObject] = useState(null);
   const [iconInfo,setIconInfo] = useState({width:PLACEHOLDER_SIZE,height:PLACEHOLDER_SIZE,x:0,y:0,rot:0,scale:1,flip:false});
   const [textInfo,setTextInfo] = useState(null);
   const [iconTooBig,setIconTooBig] = useState(false);
@@ -49,10 +49,13 @@ function Editor() {
   const [dragTwoFingerXY,setDragTwoFingerXY] = useState([{},{}]);
   const [dragTwoFingerStart,setDragTwoFingerStart] = useState({scale:1,dist:-1});
   const [touchCount,setTouchCount] = useState(0);
+  const [dragTextSettingStart,setDragTextSettingStart] = useState({});
+  const [textSettingPos,setTextSettingPos] = useState({x:0,y:0});
 
   const [isEditing,setIsEditing] = useState(false);
   const [isZooming,setIsZooming] = useState(false);
   const [isDragging,setIsDragging] = useState(false);
+  const [isDraggingTextSetting,setIsDraggingTextSetting] = useState(false);
   const [isMoved,setIsMoved] = useState(false);
   const [isScaling,setIsScaling] = useState(false);
   const [isScalingText,setIsScalingText] = useState(false);
@@ -62,9 +65,7 @@ function Editor() {
   const [isTextLoading,setIsTextLoading] = useState(false);
 
   const editor = document.getElementById('editorWindow');
-  if(editor) editor.addEventListener('touchmove', e => {
-      e.preventDefault();
-  }, { passive: false });
+  const preventDefault = useCallback((e) => { e.preventDefault(); }, [])
 
   const currentImage = currentSelectedId==-1? null:images.find(image => image.id == currentSelectedId);
   const currentIcon = currentSelectedId==-1 || (currentImage!=null&&currentImage.iconSelected==-1)? null:icons.find(icon=>icon.id==currentImage.iconSelected); 
@@ -77,7 +78,10 @@ function Editor() {
   }, [overlay]);
 
   useEffect(() => {
-    if(overlay.mode=='loading'&&images.length==init.images&&!images.some(x=>x.loading||x.deleting)) store.dispatch({type:'CLOSE_OVERLAY'});
+    if(overlay.mode=='loading'&&images.length==init.images&&!images.some(x=>x.loading||x.deleting)) {
+      if(status.mode=='user'&&!status.demo&&!status.view&&status.isFirst) store.dispatch({type:'SET_OVERLAY',mode:'init'});
+      else store.dispatch({type:'CLOSE_OVERLAY'});
+    }
 
     if(imageSelected==-1&&images.length>0) {
       if(images.find(image => image.order == 0) && !images.find(image => image.order == 0).loading) store.dispatch({type:'SELECT_IMAGE',id:images.find(image => image.order == 0).id});
@@ -185,6 +189,7 @@ function Editor() {
         scale: TEXT_DISPLAY_WIDTH/TEXT_WIDTH/editorScale,
         width: TEXT_WIDTH,
         height: TEXT_HEIGHT,
+        align: 'center',
       };
       textInfo.x = TEXT_WIDTH*textInfo.scale*0.5 + 40/editorScale;
       textInfo.y = TEXT_HEIGHT*textInfo.scale*0.5 + 70/editorScale;
@@ -200,13 +205,13 @@ function Editor() {
         [currentImage],
         () => setTimeout(Services.titleToImage(imageSelected,"This is {**Customer_INPUT**}'s Album",()=>setIsTextLoading(false)),300),
         // Services.titleToImage(imageSelected,"This is {**Customer_INPUT**}'s Album"),
-        '#000000'
+        {color:'#000000'}
       );
     }
   }
 
   const updateImageSize = () => {
-    if(imageSelected!=-1){
+    if(imageSelected!=-1&&document.getElementById('editorWindow')){
       let editorHeight = document.getElementById('editorWindow').clientHeight;
       let editorWidth = document.getElementById('editorWindow').clientWidth;
 
@@ -380,7 +385,7 @@ function Editor() {
   }
 
   const handleScaleMove = (ev) => {
-    let minScale = 30;
+    let minScale = 20;
 
     let x = ev.clientX - scaleStart.centerX;
     let y = ev.clientY - scaleStart.centerY; 
@@ -419,8 +424,9 @@ function Editor() {
     let distX = Math.hypot(x,y) * Math.cos(angle);
     let distY = Math.hypot(x,y) * Math.sin(angle);
 
-    let width = Math.max(50/textInfo.scale/editorScale,scaleTextStart.width*distX/scaleTextStart.distX);
-    let height = Math.max(50/textInfo.scale/editorScale,scaleTextStart.height*distY/scaleTextStart.distY);
+    let minScale = 20;
+    let width = Math.max(minScale/textInfo.scale/editorScale,scaleTextStart.width*distX/scaleTextStart.distX);
+    let height = Math.max(minScale/textInfo.scale/editorScale,scaleTextStart.height*distY/scaleTextStart.distY);
 
     setInfo({...objectInfo,  ...{width:width,height:height} });
     setIsMoved(true);
@@ -437,6 +443,7 @@ function Editor() {
 
   const handleTouchStart = (e) => {
     if(isEditing){
+      editor.addEventListener('touchmove',preventDefault, { passive: false });
       if(e.targetTouches.length==2){
         handleDragTwoFinger(e,true);
       }
@@ -455,7 +462,6 @@ function Editor() {
 
   const handleDragTwoFinger = (e,start) => {
     let dragTwoFingerXY_ = dragTwoFingerXY;
-
 
     if(e.nativeEvent.targetTouches.length==1){
       if(!e.nativeEvent.targetTouches[0].target.classList.contains('editTextToggle')&&document.getElementById(currentObject)&& ( document.getElementById(currentObject).contains(e.nativeEvent.targetTouches[0].target) || document.getElementById(currentObject+'Tool').contains(e.nativeEvent.targetTouches[0].target)) ) dragTwoFingerXY_ = [{x:e.nativeEvent.targetTouches[0].clientX,y:e.nativeEvent.targetTouches[0].clientY},dragTwoFingerXY[1]];    
@@ -494,7 +500,8 @@ function Editor() {
   }
   
   const handleEnd = () => {
-    if(isEditing){   
+    if(isEditing){  
+      editor.removeEventListener('touchmove',preventDefault, { passive: false });
       if(isMoved) {
         saveStep(objectInfo);
       }
@@ -509,6 +516,31 @@ function Editor() {
       setIsMoved(false);
       setTouchCount(0);
     }
+
+    if(isDraggingTextSetting){
+      setIsDraggingTextSetting(false);
+    }
+  }
+
+  const handleDragTextSettingingStart = (ev) => {
+    console.log('startt');
+    setIsDraggingTextSetting(true);
+    setDragTextSettingStart({
+      x:ev.clientX,
+      y:ev.clientY,
+      startX:textSettingPos.x,
+      startY:textSettingPos.y,
+    });
+  }
+
+  const handleDragTextSettingingMove = (ev) => {
+    if(isDraggingTextSetting){
+      let x = ev.clientX - dragTextSettingStart.x;
+      let y = ev.clientY - dragTextSettingStart.y;
+      setTextSettingPos({x:dragTextSettingStart.startX+x,y:dragTextSettingStart.startY+y});
+      console.log(x,y);
+    }
+
   }
 
   const headObject = (
@@ -552,6 +584,7 @@ function Editor() {
           if((!status.view&&!isDragging&&!isScaling&&!isScalingText)||isMobile) {
             setCurrentObject(null);
             setIsEditing(false);
+            if(status.mode=='user')setFrontObject(null);
           }
         }}
       >
@@ -565,7 +598,7 @@ function Editor() {
           onMouseDown={isMobile?null:(e)=>handleScaleStart(e.nativeEvent)}
         >
           <div className="editButtonInner" style={{pointerEvents:'none'}}>
-            <Icon path={mdiRotateLeft} size={1} color="white"/>
+            <Icon path={mdiRotateLeft} size={0.6} color="white"/>
           </div>
         </div>
 
@@ -576,7 +609,7 @@ function Editor() {
               onClick={isEditing?handleFlip:null}
             >
               <div className="editButtonInner">
-                <Icon style={{pointerEvents:'none'}} path={mdiFlipHorizontal} size={1} color="white"/>
+                <Icon style={{pointerEvents:'none'}} path={mdiFlipHorizontal} size={0.6} color="white"/>
               </div>
             </div>
 
@@ -585,7 +618,7 @@ function Editor() {
               onClick={isEditing?()=>store.dispatch({type:'UNSELECT_ICON',id:imageSelected}):null}
             >
               <div className="editButtonInner" style={{pointerEvents:'none'}}>
-                <Icon path={mdiDelete} size={1} color="white"/>
+                <Icon path={mdiDelete} size={0.6} color="white"/>
               </div>
             </div>
           </>
@@ -658,7 +691,10 @@ function Editor() {
             // style={{...{transform: `scale(${1/textInfo.scale/editorScale})`},...isDragging||isTwoFingerDragging?{pointerEvents:'none'}:{}}}
             onClick={()=>{
               if(isMobile)store.dispatch({type:'SET_OVERLAY',mode:'titleSetting'});
-              else setIsTextSetting(true);
+              else {
+                setTextSettingPos({x:textInfo.x*editorScale,y:textInfo.y*editorScale});
+                setIsTextSetting(true)
+              }
             }
           }>
             編輯
@@ -669,7 +705,7 @@ function Editor() {
             onMouseDown={isMobile?null:(e)=>handleScaleStart(e.nativeEvent)}
           >
             <div className="editButtonInner" style={{pointerEvents:'none'}} >
-              <Icon path={mdiRotateLeft} size={1} color="white"/>
+              <Icon path={mdiRotateLeft} size={0.6} color="white"/>
             </div>
           </div>
 
@@ -678,7 +714,7 @@ function Editor() {
               onClick={isEditing?()=>{store.dispatch({type:'REMOVE_TEXT',id:imageSelected});setTextInfo(null);setIsTextSetting(false)}:null}
             >
               <div className="editButtonInner" style={{pointerEvents:'none'}}>
-                <Icon path={mdiDelete} size={1} color="white"/>
+                <Icon path={mdiDelete} size={0.6} color="white"/>
               </div>
             </div>
 
@@ -687,14 +723,14 @@ function Editor() {
             onMouseDown={isMobile?null:(e)=>handleScaleTextStart(e.nativeEvent)}
           >
             <div className="editButtonInner" style={{pointerEvents:'none'}}>
-              <Icon path={mdiArrowTopRightBottomLeftBold} size={0.7} color="white"/>
+              <Icon path={mdiArrowTopRightBottomLeftBold} size={0.6} color="white"/>
             </div>
           </div>
             
         </div>
 
         {isTextLoading||currentImage.textLoading?
-            <div className='centerChildren' style={{pointerEvents:'none',transform:`scale(${0.4/textInfo.scale})`}}>
+            <div className='centerChildren' style={{pointerEvents:'none',transform:`scale(${0.3/textInfo.scale})`}}>
               <div className={'textLoader'}/>
             </div>
           :null} 
@@ -709,6 +745,7 @@ function Editor() {
   if(isDragging) mouseMove=handleDragMove;
   else if(isScaling) mouseMove=handleScaleMove;
   else if(isScalingText) mouseMove=handleScaleTextMove;
+  else if(isDraggingTextSetting) mouseMove=handleDragTextSettingingMove;
 
   return (
     <div id="editorContainer" style={{"--button-size":isMobile?'40px':'30px'}}
@@ -752,18 +789,7 @@ function Editor() {
         <div id='editorWindow'>
           <div id='editorImage' className={isChanging?'changing': isZooming?'zooming':'' } style={{backgroundImage:'url('+currentImage.url+')',width:currentImage.width*editorScale,height:currentImage.height*editorScale,transform: `translate(${zoomOffset.x}px, ${zoomOffset.y}px)`}}>
             
-            {/* text setting */}
-            {textInfo!=null && !isMobile?
-              <div className={isTextSetting?'textSetting object':'textSetting object hidden'}
-                style={{
-                  transform: `translate(${textInfo.x*editorScale}px, ${textInfo.y*editorScale}px)`,     
-                }}
-              >
-                <TitleSetting on={isTextSetting} toggle={setIsTextSetting}/>
-              </div>
-            :null}
-
-            <div className='editorArea'>
+            <div className='editorArea' style={{overflow:isEditing?'unset':'hidden'}}>
 
               {/* text */}
               {status.mode=='admin'&&textInfo!=null? <>{textObject}</>:null}
@@ -771,6 +797,7 @@ function Editor() {
               {status.mode=='user'&&currentImage.textInfo!=null?
                 <div className={status.view?'textObject object':'clickable textObject object'}
                   style={{
+                    zIndex:isTextSetting?99:0,
                     width:currentImage.textInfo.width*editorScale,
                     height:currentImage.textInfo.height*editorScale,
                     transform: `translate(${currentImage.textInfo.x*editorScale-currentImage.textInfo.width*0.5*editorScale}px, ${currentImage.textInfo.y*editorScale-currentImage.textInfo.height*0.5*editorScale}px) rotate(${currentImage.textInfo.rot}deg)`,
@@ -779,7 +806,10 @@ function Editor() {
                   onClick={()=>{
                     if(!status.view){
                       if(isMobile)store.dispatch({type:'SET_OVERLAY',mode:'titleSetting'});
-                      else setIsTextSetting(!isTextSetting)
+                      else {
+                        setTextSettingPos({x:textInfo.x*editorScale,y:textInfo.y*editorScale});
+                        setIsTextSetting(true)
+                      }
                     }
                   }}>
 
@@ -814,6 +844,23 @@ function Editor() {
             {/* admin add text button */}
             {status.mode=='admin'&&textInfo==null? <div className='clickable addTextButton' onClick={addNewText}>新增文字</div> :null}
         
+            {/* text setting */}
+            {textInfo!=null && !isMobile &&isTextSetting?
+              // <div className={isTextSetting?'textSetting object':'textSetting object hidden'}
+              //   style={{
+              //     transform: `translate(${textInfo.x*editorScale}px, ${textInfo.y*editorScale}px)`,     
+              //   }}
+              // >
+              //   <TitleSetting on={isTextSetting} toggle={setIsTextSetting}/>
+              // </div>
+              <>
+                <div className='titleSettingBackground'/>
+                <div className='titleSettingContainer' style={{}}>
+                  <TitleSetting pos={textSettingPos} dragStart={handleDragTextSettingingStart} on={isTextSetting} toggle={setIsTextSetting}/>
+                </div>
+              </>
+            :null}
+
           </div>
         </div>
       ):(

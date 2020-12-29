@@ -43,6 +43,9 @@ const imagesReducer = ( state = [], action ) => {
     case 'UPDATE_COLOR':
       state_new.find(image => image.id == action.id).textInfo.color = action.color;
       return state_new;
+    case 'UPDATE_ALIGN':
+      state_new.find(image => image.id == action.id).textInfo.align = action.align;
+      return state_new;
     case 'REMOVE_TEXT':
       state_new.find(image => image.id == action.id).textInfo = null;
       state_new.find(image => image.id == action.id).textImage = null;
@@ -173,7 +176,10 @@ const statusReducer = ( state = {mode:null}, action ) => {
   switch( action.type ) {
     case 'SET_STATUS':
       return action.status;
-      
+    case 'SHOW_VIEW':
+      return {...state,...{view:true,userView:true}};
+    case 'SHOW_VIEW_BACK':
+      return {...state,...{view:false,userView:false}};
     default: return state;
   }
 }

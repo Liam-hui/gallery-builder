@@ -7,8 +7,10 @@ import {Services} from './services';
 import {isMobile} from 'react-device-detect';
 
 import Editor from './Components/Editor';
+import Viewer from './Components/Viewer';
 import ImagesList from './Components/ImagesList';
 import IconsList from './Components/IconsList';
+import InitPopUp from './Components/InitPopUp';
 import LoadingPopUp from './Components/LoadingPopUp';
 import TitleSetting from './Components/TitleSetting';
 import TopBar from './Components/TopBar';
@@ -50,7 +52,7 @@ function App() {
       view = true;
     }
 
-    store.dispatch({type:'SET_STATUS',status:{mode:mode,demo:demo,view:view,product_id:product_id,order_id:order_id,customer_id:customer_id}});
+    store.dispatch({type:'SET_STATUS',status:{mode:mode,demo:demo,isFirst:window.isFirst==1?true:false,view:view,product_id:product_id,order_id:order_id,customer_id:customer_id}});
   
   }, []);
 
@@ -70,7 +72,7 @@ function App() {
     store.dispatch({type:'SET_SCREEN',screenWidth:window.innerWidth,screenHeight:window.innerHeight,orientation:window.matchMedia("(orientation: portrait)")? 'landscape':'portrait'});
     
     let display;
-    if(Math.min(window.innerWidth,window.innerHeight)>600) display = 'large';
+    if(!isMobile || Math.min(window.innerWidth,window.innerHeight)>600) display = 'large';
     else if(window.innerHeight>=window.innerWidth) display = 'smallPort';
     else display = 'smallLand';
     store.dispatch({type:'SET_DISPLAY',display:display});
@@ -122,20 +124,19 @@ function App() {
 
       {status.mode=='user' && status.view? 
         <>
-          {display=='smallLand'?<ImagesList/>:null}
+          {display=='large'?
 
-          <div className='ColumnRevContainer'>
-
-            {display!='smallLand'?(
+            <div className='ColumnRevContainer'>
+              
               <div className="bottomRow">
                 <ImagesList/>
               </div>
-            ):null} 
     
-            <Editor/>
+              <Viewer viewerMode={true}/>
 
-            {/* <TopBar view={true} /> */}
-          </div>
+            </div>
+
+          :<Viewer scroll={true} viewerMode={true}/>}
         </>
       :null}
 
@@ -162,6 +163,12 @@ function App() {
           {overlay.mode=='loading'?
             <div className='overlayChildren'>
               <LoadingPopUp/>
+            </div>
+          :null}
+
+          {overlay.mode=='init'?
+            <div className='overlayChildren'>
+              <InitPopUp/>
             </div>
           :null}
 

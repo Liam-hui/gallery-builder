@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import store from '../../store';
 import { useSelector } from "react-redux";
 import {Services} from '../../services';
+import {isMobile} from 'react-device-detect';
 
 import {setIconPopUpImage} from '../../Components/AddIconPopUp';
 
@@ -95,7 +96,7 @@ function AddImage(props) {
   }
 
   const finish = () => {
-    if(images.every(x=>x.iconSelected!=-1)) store.dispatch({type:'SET_OVERLAY',mode:'message',message:'完成後將不能修改',cancel:true,confirm:()=>Services.userUpdatePhotos(images,1)});
+    if(images.every(x=>x.iconSelected!=-1)) store.dispatch({type:'SET_OVERLAY',mode:'message',message:'完成後將不能修改',cancel:true,confirm:()=> {if(isMobile) store.dispatch({type:'SHOW_VIEW'}); else Services.userUpdatePhotos(images,1); store.dispatch({type:'CLOSE_OVERLAY'}); }});
     else store.dispatch({type:'SET_OVERLAY',mode:'message',message:'請先選擇所有頭像'});
   }
 

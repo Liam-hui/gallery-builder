@@ -5,6 +5,9 @@ import { CustomPicker } from 'react-color';
 import {Services} from '../../services';
 import {isMobile} from 'react-device-detect';
 import store from '../../store';
+import { mdiFormatAlignJustify } from '@mdi/js';
+import { mdiFormatAlignLeft } from '@mdi/js';
+import { mdiFormatAlignRight } from '@mdi/js';
 
 import Icon from '@mdi/react'
 import { mdiCloseThick } from '@mdi/js';
@@ -24,6 +27,7 @@ const inlineStyles = {
     '-moz-box-shadow': 'rgba(0,0,0,0.45) 0px 0 10px',
     'box-shadow': 'rgba(0,0,0,0.45) 0px 0 10px',
     position:'relative',
+    backgroundColor:'white'
   },
   mobileContainer:{
     border:'1px solid black',
@@ -34,9 +38,6 @@ const inlineStyles = {
     width:300,
     overflowY:'scroll',
     backgroundColor:'white',
-  },
-  outer:{
-    transform: 'translate(24px,-17px)',
   },
   topColor:{
     width:'100%',
@@ -112,13 +113,13 @@ const inlineStyles = {
     width:isMobile&&store.getState().status.mode=='admin'?'90%':'100%',
     marginLeft:'auto',
     marginRight:'auto',
-    padding:10,
     display:'flex',
-    alignItems:'center',
+    flexDirection:"column",
+    padding:10,
     justifyContent:'center',
     boxSizing:'border-box',
     fontSize:16,
-    border: isMobile&&store.getState().status.mode=='admin'? '1px solid black':'unset',
+    // border: isMobile&&store.getState().status.mode=='admin'? '1px solid black':'unset',
   },
   middleText:{
     fontSize:14,
@@ -146,6 +147,21 @@ const inlineStyles = {
     alignItems:'center',
     justifyContent:'center',
     marginTop: 'auto'
+  },
+  textButtonBar:{
+    width:'100%',
+    display:'flex',
+    flexDirection:'row',
+    alignItems:'center',
+    justifyContent:'space-between',
+    // backgroundColor:'white',
+  },
+  textButton:{
+    width:30,
+    height:25,
+    display:'flex',
+    alignItems:'center',
+    justifyContent:'center',
   }
 }
 
@@ -157,7 +173,7 @@ const CustomSlider = () => {
 
 const CustomPointer = () => {
   return (
-    <div style={ inlineStyles.pointer } />
+    <div className='clickable' style={ inlineStyles.pointer } />
   )
 }
 
@@ -165,6 +181,11 @@ function TitleSettingComponent(props) {
 
   const [titleText,setTitleText] = useState(null);
   const [showText,setShowText] = useState('');
+  const [textAlign,setTextAlign] = useState('');
+
+  const [isDragging,setIsDragging] = useState(false);
+  const [dragStart,setDragStart] = useState({});
+  const [dragPos,setDragPos] = useState({x:0,y:0});
 
   const status = useSelector(state => state.status);
   const display = useSelector(state => state.display);
@@ -174,8 +195,12 @@ function TitleSettingComponent(props) {
   const currentImage = imageSelected==-1? null:images.find(image => image.id == imageSelected);
 
   useEffect(() => {
+
+    setDragPos({x:0,y:0});
+
     if(status.mode=='admin'&&currentImage.textInfo&&currentImage.textTitle) {
       setTitleText(currentImage.textTitle);
+      setTextAlign(currentImage.textInfo.align);
       setShowText(Services.realText(currentImage.textTitle,'{顧客輸入}'));
     }
     else if(status.mode=='user'&&currentImage.textInfo&&currentImage.textInfo.adminTitle) {
@@ -188,6 +213,7 @@ function TitleSettingComponent(props) {
     }
     if(currentImage&&currentImage.textInfo&&currentImage.textInfo.color) props.onChange(currentImage.textInfo.color);
     else props.onChange('#000000');
+
   }, [props.on]);
 
   const textPart = (full,find) => {
@@ -212,12 +238,11 @@ function TitleSettingComponent(props) {
       setShowText(event.target.value);
       setTitleText(event.target.value);
     }
-
   }
 
   const saveTitle = () => {
     if(isMobile) store.dispatch({type:'CLOSE_OVERLAY'});
-    else props.toggle(false);
+      else props.toggle(false);
     store.dispatch({type:'TITLE_IMAGE_LOADING',id:imageSelected});
     if(status.mode=='admin'){
       Services.adminUpdatePhotos(
@@ -230,7 +255,7 @@ function TitleSettingComponent(props) {
         () => {
           Services.titleToImage(imageSelected,titleText);
         },
-        props.hex
+        {color:props.hex,align:textAlign!=''?textAlign:null}
       );
     }
     else if(status.mode=='user') Services.titleToImage(imageSelected,Services.realText(currentImage.textInfo.adminTitle,titleText));
@@ -238,17 +263,51 @@ function TitleSettingComponent(props) {
 
   let mobileWidth = display=='smallLand'?screen.screenWidth*0.4:screen.screenWidth*0.75;
 
+  const mouseMove = (e) => {
+    if(isDragging){
+      let x = e.nativeEvent.screenX - dragStart.x;
+      let y = e.nativeEvent.screenY - dragStart.y;
+      setDragPos({x:dragStart.startX+x,y:dragStart.startY+y});
+    }
+  }
+  const mouseDown = (e) => {
+    setIsDragging(true);
+    setDragStart({
+      x:e.nativeEvent.screenX,
+      y:e.nativeEvent.screenY,
+      startX:dragPos.x,
+      startY:dragPos.y,
+    });
+  }
+  const mouseUp = (e) => {
+    setIsDragging(false);
+  }
+
   if(!isMobile)return (
-    <div id='titleSetting' style={isMobile?null:inlineStyles.outer}>
+    <div id='titleSetting'  style={{transformOrigin:`50% 0%`,transform:`translate(${24+props.pos.x}px,${-17+props.pos.y}px) scale(${screen.screenWidth<900? screen.screenWidth/900*0.5+0.5:1})`}}>
 
-
-      <div style={inlineStyles.container}>
+    {/* <div id='titleSetting'  style={{zIndex:100,transform:`scale(${screen.screenWidth<900? screen.screenWidth/900*0.5+0.5:1})`}}> */}
+      <div style={{...inlineStyles.container,...{} }}>
 
         <div className='clickable closeTextSetting' onClick={()=>{props.toggle(false);}}>
           <Icon path={mdiCloseThick} style={{transform:`translate(0.5px,0.5px)`}} size={0.65} color="#DDDDDD"/>
         </div>
 
-        <div style={{...inlineStyles.topColor,  ...{backgroundColor:props.hex} }}/>
+        <div className='clickable' onMouseDown={(e)=>props.dragStart(e.nativeEvent)} style={{...inlineStyles.topColor,  ...{backgroundColor:props.hex} }}/>
+
+        {status.mode=='admin'?
+          <div style={inlineStyles.textButtonBar}>
+            <div className='clickable' onClick={()=>setTextAlign('left')} style={{...inlineStyles.textButton, ...{justifyContent:'flex-start',marginLeft:5} }}>
+              <Icon path={mdiFormatAlignLeft} style={{}} size={0.6} color={textAlign=='left'?"#000000":"#999999"}/>
+            </div>
+            <div className='clickable' onClick={()=>setTextAlign('center')} style={inlineStyles.textButton}>
+              <Icon path={mdiFormatAlignJustify} style={{}} size={0.6} color={textAlign=='center'?"#000000":"#999999"}/>
+            </div>
+            <div className='clickable' onClick={()=>setTextAlign('right')} style={{...inlineStyles.textButton, ...{justifyContent:'flex-end',marginRight:5} }}>
+              <Icon path={mdiFormatAlignRight} style={{}} size={0.6} color={textAlign=='right'?"#000000":"#999999"}/>
+            </div>
+          </div>
+        :null}
 
         <div style={{backgroundColor:'white',height:isMobile?'20%':'unset'}}>
           <div style={inlineStyles.textEditContainer}>
@@ -257,7 +316,7 @@ function TitleSettingComponent(props) {
         </div>
 
         {status.mode=='admin'?
-          <div style={ inlineStyles.saturationContainer }>
+          <div className='clickable' style={ inlineStyles.saturationContainer }>
             <div style={ inlineStyles.saturation }>
               <Saturation
                 {...props}
@@ -270,7 +329,7 @@ function TitleSettingComponent(props) {
 
         <div style={inlineStyles.bottom}>
           {status.mode=='admin'?
-            <div style={inlineStyles.hueContainer}>
+            <div className='clickable' style={inlineStyles.hueContainer}>
               <div style={inlineStyles.hueOuter}>
                 <div style={inlineStyles.hue}>
                   <Hue
@@ -333,8 +392,26 @@ function TitleSettingComponent(props) {
         </>
       :null}
 
-      <div style={{backgroundColor:'white',height:isMobile? status.mode=='admin'?'20%':220:'unset'}}>
+   
+
+      <div style={{backgroundColor:'white',height:status.mode=='admin'?'20%':220}}>
+
         <div style={inlineStyles.textEditContainer}>
+
+          {status.mode=='admin'?
+            <div style={{...inlineStyles.textButtonBar,...{width:80,marginBottom:5} }}>
+              <div className='clickable' onClick={()=>setTextAlign('left')} style={{...inlineStyles.textButton, ...{justifyContent:'flex-start',marginLeft:5} }}>
+                <Icon path={mdiFormatAlignLeft} style={{}} size={0.7} color={textAlign=='left'?"#000000":"#999999"}/>
+              </div>
+              <div className='clickable' onClick={()=>setTextAlign('center')} style={inlineStyles.textButton}>
+                <Icon path={mdiFormatAlignJustify} style={{}} size={0.7} color={textAlign=='center'?"#000000":"#999999"}/>
+              </div>
+              <div className='clickable' onClick={()=>setTextAlign('right')} style={{...inlineStyles.textButton, ...{justifyContent:'flex-end',marginRight:5} }}>
+                <Icon path={mdiFormatAlignRight} style={{}} size={0.7} color={textAlign=='right'?"#000000":"#999999"}/>
+              </div>
+            </div>
+          :null}
+
           <textarea value={titleText==null?'請輸入文字':showText}  maxLength="80" onFocus={()=>{if(titleText==null)setTitleText('')}} onBlur={()=>{if(titleText=='')setTitleText(null)}} onChange={handleTextChange} className='textInput'></textarea>
         </div>
       </div>

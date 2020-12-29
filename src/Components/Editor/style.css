@@ -39,7 +39,7 @@
   width:100%;
   height:100%;
   position: absolute;
-  overflow: hidden;
+  /* overflow: hidden; */
 }
 
 #editorImage.changing {
@@ -160,8 +160,8 @@
 .editButton {
   /* width:var(--button-size);
   height:var(--button-size); */
-  width:40px;
-  height:40px;
+  width:24px;
+  height:24px;
   position: absolute;
   box-sizing: border-box;
   display: flex;
@@ -185,8 +185,8 @@
 
 
 .editButtonInner {
-  width:30px;
-  height:30px;
+  width:18px;
+  height:18px;
   /* background-color:  rgba(140,140,140,0.7); */
   background-color: black;
   display: flex;
@@ -197,18 +197,18 @@
 .topRightButton {
   /* top: calc(var(--button-size) * -0.5);
   right: calc(var(--button-size) * -0.5); */
-  top: -20px;
-  right: -20px;
+  top: -12px;
+  right: -12px;
 }
 
 .bottomLeftButton {
-  bottom: -20px;
-  left:-20px;
+  bottom: -12px;
+  left:-12px;
 }
 
 .bottomRightButton {
-  bottom: -20px;
-  right: -20px;
+  bottom: -12px;
+  right: -12px;
 }
 
 .bottomRightButton .editButtonInner {
@@ -307,15 +307,16 @@
 }
 
 .editTextToggle{
-  width:60px;
-  height:20px;
-  top:0px;
-  left:0px;
+  width:28px;
+  height:15px;
+  top:-50px;
+  left:20px;
+  /* position: absolute; */
   background-color: rgba(120,120,120,0.3);
   transform-origin: 50% 50%;
   color:white;
   text-align: center;
-  font-size: 14px;
+  font-size: 12px;
   pointer-events: none;
   display: flex;
   justify-content: center;
@@ -340,5 +341,22 @@
   -webkit-animation: spin 2s linear infinite; /* Safari */
   animation: spin 2s linear infinite;
   opacity: 0.7;
+}
+
+.titleSettingContainer {
+  width:100%;
+  height:100%;
+  position:absolute;
+  /* display:flex;
+  align-items: center;
+  justify-content: center; */
+  z-index: 100;
+}
+
+.titleSettingBackground{
+  width:100%;
+  height:100%;
+  background-color:rgba(0,0,0,0.5);
+  position:absolute;
 }
 
